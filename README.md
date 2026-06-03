@@ -12,7 +12,7 @@ git submodule add <AIDE-repo-url> .claude/aide
 bash .claude/aide/aide-core/scripts/init.sh
 ```
 
-This bootstrap script creates `.aide/`, copies the config template, and adds `extra_skill_dirs: [.claude/aide/skills]` to `CLAUDE.md`. Once bootstrapped, `/aide-init` and `/aide` are available. Both the script and `/aide-init` are idempotent — safe to re-run.
+This bootstrap script creates `.aide/`, copies the config template, and adds `extra_skill_dirs: [.claude/aide/skills]` to `CLAUDE.md`. Once bootstrapped, `/aide` and `/aide-update` are available.
 
 ### Run the pipeline
 
@@ -27,14 +27,13 @@ AIDE will:
 
 ### Updating AIDE
 
-When AIDE releases new features or fixes, update the submodule in your project and re-run init:
+When AIDE releases new features or fixes:
 
-```bash
-git -C .claude/aide pull origin master
-bash .claude/aide/aide-core/scripts/init.sh
+```
+/aide-update
 ```
 
-Then re-run `/aide-init` to apply any new configuration. It's safe to re-run — it only adds what's missing and never overwrites your existing `CLAUDE.md` content or `.aide/config.yaml`.
+This pulls the latest AIDE submodule and re-runs bootstrap init to sync configuration. Safe to run mid-pipeline — won't affect your current `aide/*` branch.
 
 ### Customize gates
 
@@ -50,7 +49,7 @@ Edit `.aide/config.yaml` to change gate types per stage:
 AIDE/
 ├── skills/
 │   ├── aide/                          # Pipeline orchestrator
-│   ├── aide-init/                     # Project initialization
+│   ├── aide-update/                   # Update AIDE installation
 │   ├── aide-spec/                     # Stage 1: Requirements → Spec
 │   ├── aide-plan/                     # Stage 2: Spec → Plan (Phase 2)
 │   ├── aide-test/                     # Stage 4: Verification (Phase 3)
