@@ -28,7 +28,7 @@ You are the **orchestrator** of the AIDE (AI-Driven Development Automation) pipe
 
 The implement stage has no standalone skill. The orchestrator loads Superpowers' `subagent-driven-development` skill and dispatches each task in `plan.json` through implement → spec review → code quality review cycles.
 
-**Current phase**: Stages 1-2 active (spec + plan). Stages 3-4 defined for forward compatibility.
+**Current phase**: Phase 1 — spec stage is active. Plan stage (Phase 2) will produce the `plan.json` that Stage 3 consumes. Stages 3-4 defined for forward compatibility.
 
 ---
 
@@ -313,17 +313,17 @@ T002 ready (T001 already done)
 T004 ready
 ```
 
-A task blocked by a `blocked_task` remains waiting indefinitely — do not unlock it.
+A task whose dependency has been marked blocked (status = `blocked`) remains waiting indefinitely — do not unlock it.
 
 ### Step 3.3: Dispatch Per-Task Subagent Loop
 
 For each task in the ready queue, dispatch through Superpowers' subagent-driven-development pattern:
 
-1. **Load Superpowers**: Invoke the `superpowers:subagent-driven-development` skill.
+1. **Load Superpowers**: Use the Skill tool to invoke `superpowers:subagent-driven-development`. Pass the constructed implementer prompt as the `args` parameter, and the task's `id` as part of the description so subagent progress is traceable.
 
 2. **Construct the implementer prompt** with:
    - The task's `description` and `files_to_touch` from plan.json
-   - The task's parent feature's `acceptance_criteria` from spec.json (look up via `feature_id`)
+   - The task's parent feature's `acceptance_criteria` from `.aide/output/1-spec/spec.json` (look up via `feature_id`)
    - A list of commit SHAs from already-completed tasks (so the subagent sees the current code state)
 
 3. **Subagent flow** (executed by Superpowers):
