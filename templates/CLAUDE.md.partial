@@ -1,0 +1,17 @@
+## AIDE — AI-Driven Development Automation
+
+This project uses AIDE for structured AI-driven development. Run `/aide "<feature description>"` to start the pipeline.
+
+### Workflow
+
+The pipeline follows: requirements → spec → plan → implement → test. Each stage produces artifacts in `.aide/output/`. After each stage, a human gate pauses for confirmation before proceeding.
+
+### Key Commands
+
+- `/aide "<description>"` — Start the full pipeline from the beginning
+- `/aide --stage <stage>` — Re-run from a specific stage
+- `/aide --continue` — Resume from the last breakpoint
+
+### Configuration
+
+Edit `.aide/config.yaml` to adjust gate types (confirm / confirm_skip / auto) or disable stages.

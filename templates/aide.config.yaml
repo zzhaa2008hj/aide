@@ -1,0 +1,41 @@
+# AIDE workflow configuration
+# Copy this file to .aide/config.yaml in your business project and customize.
+# If .aide/config.yaml is missing, AIDE uses the defaults shown below.
+
+version: "1"
+
+# Optional: hint for language-aware skill prompts (python, go, rust, etc.)
+language: ""
+
+# When true, all gates require explicit confirmation — no skipping allowed.
+strict_mode: false
+
+stages:
+  spec:
+    enabled: true
+    gates:
+      - name: after_spec
+        type: confirm
+        prompt: "Review the spec at .aide/output/1-spec/spec.md. Does this look right? (y/n)"
+
+  # Phase 2+ — disabled in Phase 1
+  # plan:
+  #   enabled: false
+  #   gates:
+  #     - name: after_plan
+  #       type: confirm
+  #       prompt: "Review the plan at .aide/output/2-plan/plan.md. Does this look right? (y/n)"
+  #
+  # implement:
+  #   enabled: false
+  #   gates:
+  #     - name: after_implement
+  #       type: confirm_skip
+  #       prompt: "Code changes done. Skip review and proceed to testing? (y/n/skip)"
+  #
+  # test:
+  #   enabled: false
+  #   gates:
+  #     - name: after_test
+  #       type: confirm
+  #       prompt: "Test report ready. Verification passed? (y/n)"
