@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aide.dev/schemas/plan.schema.json",
+  "title": "Plan Output",
+  "description": "Schema for the structured output of the plan stage (aide-plan skill).",
+  "type": "object",
+  "required": ["tasks", "estimated_order"],
+  "properties": {
+    "tasks": {
+      "type": "array",
+      "description": "Implementation tasks, each sized for a subagent (2-5 minute execution).",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "feature_id", "description", "files_to_touch", "depends_on"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^T\\d{3}$",
+            "description": "Task ID, e.g., T001, T002."
+          },
+          "feature_id": {
+            "type": "string",
+            "pattern": "^F\\d{3}$",
+            "description": "Feature ID this task belongs to, references spec.json feature."
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Short summary of what this task implements."
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Detailed implementation instructions for the subagent."
+          },
+          "files_to_touch": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string" },
+            "description": "Files the subagent is expected to create or modify."
+          },
+          "depends_on": {
+            "type": "array",
+            "items": { "type": "string", "pattern": "^T\\d{3}$" },
+            "description": "Task IDs that must complete before this task can start. Empty array means no dependencies."
+          },
+          "estimated_order": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Suggested execution position for ordering hints."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "estimated_order": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^T\\d{3}$" },
+      "description": "All task IDs in suggested execution order (topological)."
+    }
+  },
+  "additionalProperties": false
+}
