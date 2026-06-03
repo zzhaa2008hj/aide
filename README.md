@@ -10,15 +10,15 @@ A Claude Code skill collection for structured, AI-driven development workflows. 
 cd your-project/
 git submodule add <AIDE-repo-url> .claude/aide
 git -C .claude/aide submodule update --init --recursive
-mkdir -p .aide/
-cp .claude/aide/templates/aide.config.yaml .aide/config.yaml
 ```
 
-Then add this line to your project's `CLAUDE.md`:
+Then run the init skill to set up your project:
 
-```yaml
-extra_skill_dirs: [.claude/aide/skills]
 ```
+/aide-init
+```
+
+This creates `.aide/`, copies the config template, and adds `extra_skill_dirs: [.claude/aide/skills]` to your `CLAUDE.md` (creating it if needed). Safe to re-run — skips already-configured steps.
 
 ### Run the pipeline
 
@@ -45,6 +45,7 @@ Edit `.aide/config.yaml` to change gate types per stage:
 AIDE/
 ├── skills/
 │   ├── aide/              # Pipeline orchestrator
+│   ├── aide-init/         # Project initialization
 │   ├── aide-spec/         # Stage 1: Requirements → Spec
 │   ├── aide-plan/         # Stage 2: Spec → Plan (Phase 2)
 │   └── aide-test/         # Stage 4: Verification (Phase 3)
