@@ -10,6 +10,7 @@ A Claude Code skill collection for structured, AI-driven development workflows. 
 cd your-project/
 git submodule add <AIDE-repo-url> .claude/aide
 git -C .claude/aide submodule update --init --recursive
+mkdir -p .aide/
 cp .claude/aide/templates/aide.config.yaml .aide/config.yaml
 ```
 
