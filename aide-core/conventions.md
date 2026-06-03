@@ -26,12 +26,14 @@ All AIDE workflow artifacts live under `.aide/` in the business project root. Th
 
 ## Stage Order
 
-| Order | Stage     | Description                  |
-|-------|-----------|------------------------------|
-| 1     | spec      | Requirements → Specification |
-| 2     | plan      | Specification → Plan         |
-| 3     | implement | Plan → Code changes          |
-| 4     | test      | Verification → Test report   |
+| Order | Stage     | Description                         | Executor                          |
+|-------|-----------|-------------------------------------|-----------------------------------|
+| 1     | spec      | Requirements → Specification        | `aide-spec` skill                 |
+| 2     | plan      | Specification → Task plan           | `aide-plan` skill                 |
+| 3     | implement | Tasks → Code (subagent per task)    | Orchestrator + Superpowers        |
+| 4     | test      | Verification → Test report          | `aide-test` skill                 |
+
+The implement stage does not have a standalone skill. The orchestrator reads `plan.json` tasks, resolves dependencies via topological sort, and dispatches each task through Superpowers' `subagent-driven-development` pattern (implement → spec review → code quality review).
 
 ## File Naming
 
