@@ -19,14 +19,16 @@ You are the **orchestrator** of the AIDE (AI-Driven Development Automation) pipe
 
 ## Pipeline Stages
 
-| Order | Stage     | Skill             | Description                  |
-|-------|-----------|-------------------|------------------------------|
-| 1     | spec      | `aide-spec`       | Requirements → Specification |
-| 2     | plan      | `aide-plan`       | Specification → Plan         |
-| 3     | implement | `aide-implement`  | Plan → Code changes          |
-| 4     | test      | `aide-test`       | Verification → Test report   |
+| Order | Stage     | Executor                        | Description                         |
+|-------|-----------|---------------------------------|-------------------------------------|
+| 1     | spec      | `aide-spec` skill               | Requirements → Specification        |
+| 2     | plan      | `aide-plan` skill               | Specification → Task plan           |
+| 3     | implement | Orchestrator + Superpowers      | Tasks → Code (subagent per task)    |
+| 4     | test      | `aide-test` skill               | Verification → Test report          |
 
-**Phase 1 scope**: Only stage 1 (spec) is active. Stages 2-4 are defined for forward compatibility but are disabled in Phase 1.
+The implement stage has no standalone skill. The orchestrator loads Superpowers' `subagent-driven-development` skill and dispatches each task in `plan.json` through implement → spec review → code quality review cycles.
+
+**Current phase**: Stages 1-2 active (spec + plan). Stages 3-4 defined for forward compatibility.
 
 ---
 
@@ -175,11 +177,12 @@ Announce which stage is starting. Use a clear header like:
 
 Load the stage skill by its name. The skill files are at:
 - `.claude/aide/skills/aide-spec/skill.md` (spec stage)
-- `.claude/aide/skills/aide-plan/skill.md` (plan stage — Phase 2)
-- `.claude/aide/skills/aide-implement/skill.md` (implement stage — Phase 3)
-- `.claude/aide/skills/aide-test/skill.md` (test stage — Phase 4)
+- `.claude/aide/skills/aide-plan/skill.md` (plan stage)
+- `.claude/aide/skills/aide-test/skill.md` (test stage)
 
-Use the Skill tool to invoke the skill, passing the user's original request as the argument. For Phase 1, only `aide-spec` is invoked.
+Use the Skill tool to invoke the skill, passing the user's original request (plus any gate feedback) as the argument.
+
+**Exception — implement stage**: There is no `aide-implement` skill. When the implement stage is reached, follow the dedicated "Stage 3: Implement" section below instead of this generic stage execution flow.
 
 ### 3. Verify Stage Output
 
@@ -265,6 +268,114 @@ After all gates for a stage pass, commit the pipeline artifacts:
 git add .aide/
 git commit -m "aide(spec): add user authentication spec with F001-F003"
 ```
+
+---
+
+## Stage 3: Implement (Subagent-Driven)
+
+The implement stage does not use a single skill. Instead, the orchestrator reads `plan.json`, resolves task dependencies, and dispatches each task through Superpowers' subagent-driven-development pattern.
+
+### Prerequisites
+
+Before entering the implement stage, verify:
+1. `plan.json` exists at `.aide/output/2-plan/plan.json`
+2. Superpowers skills are available at `.claude/aide/superpowers/skills/`
+3. All previous stages' gates have passed
+
+### Step 3.1: Load plan.json
+
+Read `.aide/output/2-plan/plan.json` and parse the `tasks` array. Each task has:
+- `id` (e.g., "T001")
+- `feature_id` (e.g., "F001") — links back to spec.json
+- `title` — short summary
+- `description` — detailed instructions for the subagent
+- `files_to_touch` — files to create or modify
+- `depends_on` — task IDs that must complete first (empty = no dependency)
+
+### Step 3.2: Resolve Dependencies
+
+Build a dependency graph from the `depends_on` fields:
+
+1. **Ready queue**: Tasks with empty `depends_on` are immediately ready.
+2. **Waiting set**: Tasks with non-empty `depends_on` wait until all their dependencies are in `completed_tasks`.
+3. **Topological check**: If circular dependencies are detected, report the cycle and abort.
+
+Example:
+```
+Tasks: T001(no deps), T002(depends_on: T001), T003(no deps), T004(depends_on: T001, T003)
+
+Ready: [T001, T003]
+Waiting: [T002 needs T001], [T004 needs T001, T003]
+
+T001 done -> T004 still waiting (needs T003)
+T003 done -> T004 ready
+T002 ready (T001 already done)
+T004 ready
+```
+
+A task blocked by a `blocked_task` remains waiting indefinitely — do not unlock it.
+
+### Step 3.3: Dispatch Per-Task Subagent Loop
+
+For each task in the ready queue, dispatch through Superpowers' subagent-driven-development pattern:
+
+1. **Load Superpowers**: Invoke the `superpowers:subagent-driven-development` skill.
+
+2. **Construct the implementer prompt** with:
+   - The task's `description` and `files_to_touch` from plan.json
+   - The task's parent feature's `acceptance_criteria` from spec.json (look up via `feature_id`)
+   - A list of commit SHAs from already-completed tasks (so the subagent sees the current code state)
+
+3. **Subagent flow** (executed by Superpowers):
+   - Implementer subagent: write code + tests, commit, self-review
+   - Spec reviewer subagent: verify code matches acceptance_criteria
+   - Code quality reviewer subagent: verify code is well-built
+
+4. **Evaluate results**:
+   - Both reviews pass -> task status = `done`. Record `commits` and `review_summary`. Release any tasks waiting on this task to the ready queue.
+   - Review fails -> return to implementer with feedback, retry (max 2 rounds). If still failing after 2 rounds -> task status = `blocked`. Record `reason`.
+   - Subagent crashes or times out -> task status = `blocked`. Record `reason`.
+
+5. **Continue** until the ready queue is empty and no tasks are still waiting (all are `done` or `blocked`).
+
+### Step 3.4: Aggregate Results
+
+After all tasks resolve, construct `implement.json`:
+
+```json
+{
+  "completed_tasks": ["T001", "T003"],
+  "blocked_tasks": [
+    {"task_id": "T002", "reason": "<why>"}
+  ],
+  "changed_files": ["<all files from done tasks>"],
+  "task_results": [
+    {"task_id": "T001", "status": "done", "commits": ["<sha>"], "review_summary": "spec passed, quality approved"},
+    {"task_id": "T002", "status": "blocked", "reason": "<why>"},
+    {"task_id": "T003", "status": "done", "commits": ["<sha>"], "review_summary": "spec passed, quality approved"}
+  ]
+}
+```
+
+Write this to `.aide/output/3-implement/implement.json`.
+
+### Step 3.5: Report
+
+Present the implement stage summary:
+
+```
+[aide] Implement stage complete:
+  ✓ T001 — <title> (<commit>)
+  ✗ T002 — <title> (blocked: <reason>)
+  ✓ T003 — <title> (<commit>)
+
+  N/M tasks completed, K blocked.
+  Changed: <file list>
+
+  To fix blocked tasks, update plan.json and run /aide --continue
+```
+
+Then proceed to the gate checkpoint for `after_implement` (default: `auto`).
 
 ---
 
