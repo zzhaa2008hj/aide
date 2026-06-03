@@ -8,7 +8,7 @@ A Claude Code skill collection for structured, AI-driven development workflows. 
 
 ```bash
 cd your-project/
-claude plugin marketplace add https://github.com/zzhaa2008hj/aide.git
+claude plugin marketplace add https://github.com/zzhaa2008hj/aide.git --scope project
 claude plugin install aide@aide --scope project
 ```
 
