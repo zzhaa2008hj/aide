@@ -29,26 +29,25 @@ else
     echo "[done]  .aide/config.yaml created from template"
 fi
 
-# Step 3: Symlink skills into .claude/skills/
+# Step 3: Link individual skills into .claude/skills/
 # Claude Code auto-discovers skills from .claude/skills/<name>/SKILL.md.
-# AIDE skills live at .claude/aide/skills/, so we create a symlink.
-if [ -L .claude/skills ]; then
-    CURRENT_TARGET=$(readlink .claude/skills)
-    if [ "$CURRENT_TARGET" = "aide/skills" ]; then
-        echo "[skip]  .claude/skills already linked to aide/skills"
+# Each skill gets its own symlink pointing into the AIDE submodule.
+mkdir -p .claude/skills
+LINKED=0
+SKIPPED=0
+for skill_dir in .claude/aide/skills/*/; do
+    skill_name=$(basename "$skill_dir")
+    if [ -L ".claude/skills/$skill_name" ]; then
+        SKIPPED=$((SKIPPED + 1))
+    elif [ -e ".claude/skills/$skill_name" ]; then
+        echo "[skip]  .claude/skills/$skill_name already exists (not a symlink)"
+        SKIPPED=$((SKIPPED + 1))
     else
-        echo "[warn]  .claude/skills points to '$CURRENT_TARGET', replacing"
-        rm .claude/skills
-        ln -s aide/skills .claude/skills
-        echo "[done]  .claude/skills linked to aide/skills"
+        ln -s "../aide/skills/$skill_name" ".claude/skills/$skill_name"
+        LINKED=$((LINKED + 1))
     fi
-elif [ -e .claude/skills ]; then
-    echo "[warn]  .claude/skills exists but is not a symlink — leaving as-is"
-else
-    mkdir -p .claude
-    ln -s aide/skills .claude/skills
-    echo "[done]  .claude/skills linked to aide/skills"
-fi
+done
+echo "[done]  .claude/skills/: $LINKED linked, $SKIPPED already present"
 
 # Step 4: Verify submodule is fully set up
 if [ ! -f .claude/aide/skills/aide/skill.md ]; then
