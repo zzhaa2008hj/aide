@@ -1,17 +1,41 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# init.sh — Bootstrap AIDE into a business project.
+# init.sh — Bootstrap AIDE config into a business project.
 #
-# Run this ONCE after cloning AIDE:
-#   git clone <AIDE-url> .claude/aide
-#   bash .claude/aide/aide-core/scripts/init.sh
+# Run ONCE after installing AIDE via claude plugin install:
+#   claude plugin marketplace add https://github.com/zzhaa2008hj/aide.git
+#   claude plugin install aide@aide --scope project
+#   bash <aide-path>/aide-core/scripts/init.sh
 #
-# After this, /aide-init and /aide are available.
+# After this, /aide and /aide-update are available.
 # Safe to re-run — skips already-configured steps.
 
 echo "=== AIDE Bootstrap Init ==="
 echo ""
+
+# Locate the AIDE installation (installed as a Claude Code plugin)
+# Try common locations: project plugin dir, user cache
+AIDE_DIR=""
+for candidate in \
+    .claude/plugins/aide \
+    "$HOME/.claude/plugins/cache/aide/aide"/* \
+    "$HOME/.claude/plugins/cache/aide"/*/aide; do
+    if [ -f "$candidate/skills/aide/skill.md" ]; then
+        AIDE_DIR="$candidate"
+        break
+    fi
+done
+
+if [ -z "$AIDE_DIR" ]; then
+    echo ""
+    echo "WARNING: AIDE installation not found."
+    echo "Install AIDE first:"
+    echo "  claude plugin marketplace add https://github.com/zzhaa2008hj/aide.git"
+    echo "  claude plugin install aide@aide --scope project"
+    exit 1
+fi
+echo "[done]  AIDE found at $AIDE_DIR"
 
 # Step 1: .aide/ directory
 if [ -d .aide ]; then
@@ -25,46 +49,16 @@ fi
 if [ -f .aide/config.yaml ]; then
     echo "[skip]  .aide/config.yaml already exists"
 else
-    cp .claude/aide/templates/aide.config.yaml .aide/config.yaml
+    cp "$AIDE_DIR/templates/aide.config.yaml" .aide/config.yaml
     echo "[done]  .aide/config.yaml created from template"
 fi
 
-# Step 3: Register AIDE skills via extraSkillDirs
-# Instead of copying into .claude/skills/ (which would overwrite project skills),
-# we register .claude/aide/skills as a plugin directory in settings.
-python3 -c "
-import json, os
-settings_path = '.claude/settings.local.json'
-aide_skills = '.claude/aide/skills'
-os.makedirs('.claude', exist_ok=True)
-if os.path.exists(settings_path):
-    with open(settings_path) as f:
-        settings = json.load(f)
-else:
-    settings = {}
-existing = settings.get('extraSkillDirs', [])
-if aide_skills in existing:
-    print('skip: extraSkillDirs already includes .claude/aide/skills')
-else:
-    settings['extraSkillDirs'] = existing + [aide_skills]
-    with open(settings_path, 'w') as f:
-        json.dump(settings, f, indent=2)
-        f.write('\n')
-    print('done: registered .claude/aide/skills in extraSkillDirs')
-"
-
-# Step 4: Verify AIDE installation
-if [ ! -f .claude/aide/skills/aide/skill.md ]; then
-    echo ""
-    echo "WARNING: AIDE skill files not found at .claude/aide/skills/."
-    echo "The AIDE repository may not be fully cloned. Run:"
-    echo "  git clone <AIDE-url> .claude/aide"
-    exit 1
-fi
+skill_count=$(ls -1 "$AIDE_DIR/skills/" 2>/dev/null | wc -l)
+echo "[done]  $skill_count skills available"
 
 echo ""
 echo "=== AIDE bootstrap complete ==="
 echo ""
 echo "Now you can use:"
-echo "  /aide-update     — update AIDE to latest"
+echo "  /aide-update     — update AIDE to latest (claude plugin update aide)"
 echo "  /aide \"<desc>\"   — start the pipeline"

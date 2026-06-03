@@ -1,46 +1,48 @@
 ---
 name: aide-update
 description: >-
-  Update AIDE to the latest version: pulls the .claude/aide repository and
-  re-runs bootstrap init to sync configuration. Safe to run anytime.
+  Update AIDE to the latest version via claude plugin update. Safe to run anytime.
 ---
 
 # aide-update — Update AIDE
 
-You update the AIDE installation in a business project. Your job is to pull the latest AIDE code from `.claude/aide` and re-run the bootstrap init to sync any new configuration.
+You update the AIDE installation in a business project. Your job is to run `claude plugin update aide` and re-run bootstrap init.
 
 ## Process
 
-### Step 1: Pull the latest code
+### Step 1: Update the plugin
 
 ```bash
-git -C .claude/aide pull origin master
+claude plugin update aide
 ```
 
-If this fails (e.g., network error, merge conflict), report the error and stop.
+If this fails (e.g., network error), report the error and stop.
 
 ### Step 2: Re-run bootstrap init
 
+Locate the updated AIDE installation and run init.sh:
+
 ```bash
-bash .claude/aide/aide-core/scripts/init.sh
+# Find AIDE and run init
+AIDE_DIR=$(find ~/.claude/plugins/cache/aide -name "skill.md" -path "*/skills/aide/*" 2>/dev/null | head -1 | sed 's|/skills/aide/skill.md||')
+if [ -n "$AIDE_DIR" ] && [ -f "$AIDE_DIR/aide-core/scripts/init.sh" ]; then
+    bash "$AIDE_DIR/aide-core/scripts/init.sh"
+fi
 ```
 
-This is the same idempotent bootstrap script used during initial install. It syncs `.aide/config.yaml` template changes and ensures `.claude/aide/skills` is registered via `extraSkillDirs` in settings.
+This syncs `.aide/config.yaml` template changes.
 
 ### Step 3: Report
 
 Show what changed:
 
 ```
-AIDE updated to <new-commit-short>.
-  .aide/config.yaml         — up to date (or: updated)
-  .claude/settings.local.json — up to date (or: updated extraSkillDirs)
+AIDE updated to latest.
+  .aide/config.yaml     — up to date (or: updated)
 ```
-
-If the working tree has uncommitted changes in `.claude/aide/` after the pull, warn the user:
-"Warning: uncommitted changes in .claude/aide/. This may indicate a merge conflict. Review with `git -C .claude/aide status`."
 
 ## Important Guidelines
 
-- Always pull before running init.sh. Never skip the pull.
+- Always run `claude plugin update aide` before running init.sh. Never skip the update.
 - If the user is mid-pipeline (on an `aide/*` branch), warn them but proceed — updating AIDE won't affect their current branch's pipeline state.
+- A restart of Claude Code may be required for updated skills to take effect.

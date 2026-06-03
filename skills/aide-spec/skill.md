@@ -134,7 +134,7 @@ This file must conform to the schema at `aide-core/schemas/spec.schema.json`.
 
 ### Directory Layout
 
-Follow the conventions in `aide-core/conventions.md` (located in the AIDE installation directory, typically `.claude/aide/aide-core/conventions.md`).
+Follow the conventions in `aide-core/conventions.md`. Find the AIDE installation by checking `~/.claude/plugins/cache/aide/*/aide/` first (installed via `claude plugin install`), then `.claude/plugins/aide/`, then `.claude/aide/` (legacy).
 
 The target output directory is `.aide/output/1-spec/` under the **business project root**.
 
@@ -148,12 +148,13 @@ mkdir -p .aide/output/1-spec/
 
 Before reporting completion, **validate** `spec.json` against the schema:
 
-1. Locate the AIDE installation directory. It is typically at `.claude/aide/` relative to the business project root. The schema is at `<aide-dir>/aide-core/schemas/spec.schema.json`.
+1. Locate the AIDE installation directory. Check `~/.claude/plugins/cache/aide/*/aide/` first, then `.claude/plugins/aide/`. The schema is at `<aide-dir>/aide-core/schemas/spec.schema.json`.
 2. Ensure the `jsonschema` Python package is available (`pip install jsonschema` if needed).
-3. Run validation (replace `<aide-dir>` with the actual path):
+3. Run validation:
 
 ```bash
-AIDE_DIR=".claude/aide"
+AIDE_DIR=$(find ~/.claude/plugins/cache/aide .claude/plugins -name "skill.md" -path "*/skills/aide/*" 2>/dev/null | head -1 | sed 's|/skills/aide/skill.md||')
+[ -z "$AIDE_DIR" ] && AIDE_DIR=".claude/aide"
 python3 -c "
 import json, jsonschema, sys
 with open('${AIDE_DIR}/aide-core/schemas/spec.schema.json') as f:

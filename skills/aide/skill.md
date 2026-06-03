@@ -102,11 +102,16 @@ When the user invokes the `aide` skill, follow this startup sequence.
 
 ### Step 1: Read conventions
 
-Read the AIDE conventions document at `.claude/aide/aide-core/conventions.md` (relative to the business project root, which is the current working directory). This establishes the directory layout, stage order, and git conventions.
+Read the AIDE conventions document. Find it by searching for `aide-core/conventions.md` in these locations (in order):
+1. `~/.claude/plugins/cache/aide/*/aide/aide-core/conventions.md` (installed via claude plugin install)
+2. `.claude/plugins/aide/aide-core/conventions.md` (project directory)
+3. `.claude/aide/aide-core/conventions.md` (legacy)
+
+This establishes the directory layout, stage order, and git conventions.
 
 ### Step 2: Determine business project root
 
-The business project root is the current working directory. All `.aide/` paths are relative to this directory. The AIDE installation is at `.claude/aide/` relative to the business project root.
+The business project root is the current working directory. All `.aide/` paths are relative to this directory. Find the AIDE installation by searching `~/.claude/plugins/cache/aide/` first, then `.claude/plugins/aide/`, then `.claude/aide/` (legacy).
 
 ### Step 3: Load configuration
 
@@ -431,6 +436,6 @@ The orchestrator must gracefully handle missing stage skills by reporting the st
 - Always use the Skill tool to invoke stage skills. Pass the user's original request (plus any gate feedback) as the argument.
 - When re-invoking a stage due to gate feedback, append the feedback to the original request so the stage skill can incorporate it.
 - Use absolute paths when executing bash commands (e.g., `mkdir -p .aide/output/1-spec/` — relative paths are fine since the business project root is the cwd).
-- The AIDE installation directory is `.claude/aide/` relative to the business project root. Use this path to reference `aide-core/` files, schemas, and sub-skills.
+- The AIDE installation directory is typically under `~/.claude/plugins/cache/aide/` (installed via `claude plugin install`) or `.claude/plugins/aide/` (manual). Use this path to reference `aide-core/` files, schemas, and sub-skills.
 - Maintain a professional, concise tone. Report what is happening at each step.
 - If the user interrupts mid-pipeline (e.g., with unrelated questions), acknowledge the interruption and offer to resume with `/aide --continue`.
