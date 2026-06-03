@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aide.dev/schemas/implement.schema.json",
+  "title": "Implement Output",
+  "description": "Schema for the structured output of the implement stage (subagent-driven).",
+  "type": "object",
+  "required": ["completed_tasks", "blocked_tasks", "changed_files", "task_results"],
+  "properties": {
+    "completed_tasks": {
+      "type": "array",
+      "description": "Task IDs that completed successfully.",
+      "items": { "type": "string", "pattern": "^T\\d{3}$" }
+    },
+    "blocked_tasks": {
+      "type": "array",
+      "description": "Tasks that could not be completed, with reasons.",
+      "items": {
+        "type": "object",
+        "required": ["task_id", "reason"],
+        "properties": {
+          "task_id": { "type": "string", "pattern": "^T\\d{3}$" },
+          "reason": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "changed_files": {
+      "type": "array",
+      "description": "All files modified across all completed tasks.",
+      "items": { "type": "string" }
+    },
+    "task_results": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Per-task execution results.",
+      "items": {
+        "type": "object",
+        "required": ["task_id", "status"],
+        "properties": {
+          "task_id": { "type": "string", "pattern": "^T\\d{3}$" },
+          "status": {
+            "type": "string",
+            "enum": ["done", "blocked"]
+          },
+          "commits": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Commit SHA(s) for this task. Required when status is 'done'."
+          },
+          "review_summary": {
+            "type": "string",
+            "description": "Summary of review outcomes. Required when status is 'done'."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why the task was blocked. Required when status is 'blocked'."
+          }
+        },
+        "additionalProperties": false,
+        "if": {
+          "properties": { "status": { "const": "done" } }
+        },
+        "then": {
+          "required": ["commits", "review_summary"]
+        },
+        "else": {
+          "required": ["reason"]
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}
