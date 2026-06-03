@@ -1,22 +1,25 @@
 ---
 name: aide-update
 description: >-
-  Update AIDE to the latest version via claude plugin update. Safe to run anytime.
+  Update AIDE to the latest version via claude plugin update with project scope
+  priority. Safe to run anytime.
 ---
 
 # aide-update — Update AIDE
 
-You update the AIDE installation in a business project. Your job is to run `claude plugin update aide` and then re-bootstrap config via `/aide-init`.
+You update the AIDE installation in a business project. AIDE defaults to project scope — try project-scoped update first, then fall back to user scope.
 
 ## Process
 
 ### Step 1: Update the plugin
 
+Try project scope first, fall back to user scope:
+
 ```bash
-claude plugin update aide
+claude plugin update aide --scope project 2>/dev/null || claude plugin update aide
 ```
 
-If this fails (e.g., network error), report the error and stop.
+If both fail (e.g., network error), report the error and stop.
 
 ### Step 2: Re-bootstrap config
 
@@ -32,12 +35,12 @@ Show what changed:
 
 ```
 AIDE updated to latest.
-  Plugin               — updated via claude plugin update
+  Plugin               — updated via claude plugin update (project scope)
   .aide/config.yaml     — up to date (or: updated via aide-init)
 ```
 
 ## Important Guidelines
 
-- Always run `claude plugin update aide` before invoking aide-init. Never skip the update.
+- Always try `--scope project` first — AIDE is installed as a project plugin by default.
 - If the user is mid-pipeline (on an `aide/*` branch), warn them but proceed — updating AIDE won't affect their current branch's pipeline state.
 - A restart of Claude Code may be required for updated skills to take effect.
