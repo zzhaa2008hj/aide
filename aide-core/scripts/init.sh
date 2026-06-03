@@ -29,25 +29,29 @@ else
     echo "[done]  .aide/config.yaml created from template"
 fi
 
-# Step 3: Link individual skills into .claude/skills/
-# Claude Code auto-discovers skills from .claude/skills/<name>/SKILL.md.
-# Each skill gets its own symlink pointing into the AIDE submodule.
-mkdir -p .claude/skills
-LINKED=0
-SKIPPED=0
-for skill_dir in .claude/aide/skills/*/; do
-    skill_name=$(basename "$skill_dir")
-    if [ -L ".claude/skills/$skill_name" ]; then
-        SKIPPED=$((SKIPPED + 1))
-    elif [ -e ".claude/skills/$skill_name" ]; then
-        echo "[skip]  .claude/skills/$skill_name already exists (not a symlink)"
-        SKIPPED=$((SKIPPED + 1))
-    else
-        ln -s "../aide/skills/$skill_name" ".claude/skills/$skill_name"
-        LINKED=$((LINKED + 1))
-    fi
-done
-echo "[done]  .claude/skills/: $LINKED linked, $SKIPPED already present"
+# Step 3: Register AIDE skills via extraSkillDirs
+# Instead of copying into .claude/skills/ (which would overwrite project skills),
+# we register .claude/aide/skills as a plugin directory in settings.
+python3 -c "
+import json, os
+settings_path = '.claude/settings.local.json'
+aide_skills = '.claude/aide/skills'
+os.makedirs('.claude', exist_ok=True)
+if os.path.exists(settings_path):
+    with open(settings_path) as f:
+        settings = json.load(f)
+else:
+    settings = {}
+existing = settings.get('extraSkillDirs', [])
+if aide_skills in existing:
+    print('skip: extraSkillDirs already includes .claude/aide/skills')
+else:
+    settings['extraSkillDirs'] = existing + [aide_skills]
+    with open(settings_path, 'w') as f:
+        json.dump(settings, f, indent=2)
+        f.write('\n')
+    print('done: registered .claude/aide/skills in extraSkillDirs')
+"
 
 # Step 4: Verify submodule is fully set up
 if [ ! -f .claude/aide/skills/aide/skill.md ]; then
