@@ -12,7 +12,9 @@ claude plugin marketplace add https://github.com/zzhaa2008hj/aide.git
 claude plugin install aide@aide --scope project
 ```
 
-That's it. AIDE is now installed as a project plugin — skills are auto-discovered by Claude Code. `/aide` and `/aide-update` are available immediately.
+That's it. AIDE is now installed as a project plugin — skills are auto-discovered by Claude Code. `/aide`, `/aide-init`, and `/aide-update` are available.
+
+Optional: run `/aide-init` to explicitly bootstrap `.aide/` and the config template (the pipeline will auto-create these on first run regardless).
 
 ### Run the pipeline
 

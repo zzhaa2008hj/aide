@@ -181,9 +181,9 @@ Announce which stage is starting. Use a clear header like:
 ### 2. Load the Stage Skill
 
 Load the stage skill by its name. The skill files are at:
-- `.claude/aide/skills/aide-spec/skill.md` (spec stage)
-- `.claude/aide/skills/aide-plan/skill.md` (plan stage)
-- `.claude/aide/skills/aide-test/skill.md` (test stage)
+- `.claude/aide/skills/aide-spec/SKILL.md` (spec stage)
+- `.claude/aide/skills/aide-plan/SKILL.md` (plan stage)
+- `.claude/aide/skills/aide-test/SKILL.md` (test stage)
 
 Use the Skill tool to invoke the skill, passing the user's original request (plus any gate feedback) as the argument.
 

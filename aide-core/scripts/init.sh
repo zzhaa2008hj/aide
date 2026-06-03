@@ -21,7 +21,7 @@ for candidate in \
     .claude/plugins/aide \
     "$HOME/.claude/plugins/cache/aide/aide"/* \
     "$HOME/.claude/plugins/cache/aide"/*/aide; do
-    if [ -f "$candidate/skills/aide/skill.md" ]; then
+    if [ -f "$candidate/skills/aide/SKILL.md" ]; then
         AIDE_DIR="$candidate"
         break
     fi

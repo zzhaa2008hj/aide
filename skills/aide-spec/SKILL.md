@@ -153,7 +153,7 @@ Before reporting completion, **validate** `spec.json` against the schema:
 3. Run validation:
 
 ```bash
-AIDE_DIR=$(find ~/.claude/plugins/cache/aide .claude/plugins -name "skill.md" -path "*/skills/aide/*" 2>/dev/null | head -1 | sed 's|/skills/aide/skill.md||')
+AIDE_DIR=$(find ~/.claude/plugins/cache/aide .claude/plugins -name "SKILL.md" -path "*/skills/aide/*" 2>/dev/null | head -1 | sed 's|/skills/aide/SKILL.md||')
 [ -z "$AIDE_DIR" ] && AIDE_DIR=".claude/aide"
 python3 -c "
 import json, jsonschema, sys
