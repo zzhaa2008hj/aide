@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+# pre-push hook — Enforce marketplace.json version bump when functional files change.
+#
+# Rules (matches bump-version.sh):
+#   Same branch (master) → patch bump required (x.y.Z)
+#   Feature branch        → minor bump required (x.Y.z)
+#   --major flag          → major bump required (X.y.z, manual via bump-version.sh)
+#
+# Install: ln -sf ../../hooks/pre-push .git/hooks/pre-push
+
+set -euo pipefail
+
+REMOTE="$1"
+REMOTE_URL="$2"
+
+# Tracked functional paths (changes here require version bump)
+FUNCTIONAL_PATHS=("skills/" "aide-core/" "templates/" "hooks/")
+
+while read -r LOCAL_REF LOCAL_SHA REMOTE_REF REMOTE_SHA; do
+    if [ "$LOCAL_SHA" = "0000000000000000000000000000000000000000" ]; then
+        continue
+    fi
+
+    BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
+    if [ "$REMOTE_SHA" = "0000000000000000000000000000000000000000" ]; then
+        BASE=$(git merge-base master HEAD 2>/dev/null || echo "")
+        [ -z "$BASE" ] && continue
+        RANGE="$BASE..$LOCAL_SHA"
+    else
+        RANGE="$REMOTE_SHA..$LOCAL_SHA"
+    fi
+
+    CHANGED=$(git diff --name-only "$RANGE" 2>/dev/null || echo "")
+    [ -z "$CHANGED" ] && continue
+
+    FUNC_CHANGED=false
+    for path in "${FUNCTIONAL_PATHS[@]}"; do
+        if echo "$CHANGED" | grep -q "^$path"; then
+            FUNC_CHANGED=true
+            break
+        fi
+    done
+
+    [ "$FUNC_CHANGED" = false ] && continue
+
+    if ! echo "$CHANGED" | grep -q '^.claude-plugin/marketplace.json'; then
+        cat <<EOF
+
+============================================================
+  PUSH BLOCKED: Functional files changed without version bump
+============================================================
+
+Changed files in: skills/, aide-core/, templates/, or hooks/
+
+marketplace.json was NOT updated. Run:
+
+  bash aide-core/scripts/bump-version.sh
+
+  Branch: $BRANCH → $( [ "$BRANCH" != "master" ] && [ "$BRANCH" != "main" ] && echo "minor bump" || echo "patch bump" )
+  (use --major for breaking changes)
+
+Then commit and push again.
+
+============================================================
+
+EOF
+        exit 1
+    fi
+
+    OLD_VERSION=$(git show "$REMOTE_SHA":.claude-plugin/marketplace.json 2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['plugins'][0]['version'])" 2>/dev/null || echo "0.0.0")
+    NEW_VERSION=$(git show "$LOCAL_SHA":.claude-plugin/marketplace.json 2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['plugins'][0]['version'])" 2>/dev/null || echo "")
+
+    if [ "$OLD_VERSION" = "$NEW_VERSION" ]; then
+        cat <<EOF
+
+============================================================
+  PUSH BLOCKED: marketplace.json version not bumped
+============================================================
+
+Old version: $OLD_VERSION
+New version: $NEW_VERSION  (unchanged!)
+
+Functional files changed but version stayed the same. Run:
+
+  bash aide-core/scripts/bump-version.sh
+
+  Branch: $BRANCH → $( [ "$BRANCH" != "master" ] && [ "$BRANCH" != "main" ] && echo "minor bump" || echo "patch bump" )
+
+Then commit and push again.
+
+============================================================
+
+EOF
+        exit 1
+    fi
+
+    echo "✓ Version check passed: $OLD_VERSION → $NEW_VERSION ($BRANCH)"
+done
+
+exit 0
