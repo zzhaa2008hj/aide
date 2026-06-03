@@ -1,17 +1,17 @@
 ---
 name: aide-update
 description: >-
-  Update AIDE to the latest version: pulls the .claude/aide submodule and
+  Update AIDE to the latest version: pulls the .claude/aide repository and
   re-runs bootstrap init to sync configuration. Safe to run anytime.
 ---
 
 # aide-update — Update AIDE
 
-You update the AIDE installation in a business project. Your job is to pull the latest AIDE code from the submodule and re-run the bootstrap init to sync any new configuration.
+You update the AIDE installation in a business project. Your job is to pull the latest AIDE code from `.claude/aide` and re-run the bootstrap init to sync any new configuration.
 
 ## Process
 
-### Step 1: Pull the submodule
+### Step 1: Pull the latest code
 
 ```bash
 git -C .claude/aide pull origin master

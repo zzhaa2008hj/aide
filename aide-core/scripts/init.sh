@@ -3,8 +3,8 @@ set -euo pipefail
 
 # init.sh — Bootstrap AIDE into a business project.
 #
-# Run this ONCE after adding the AIDE submodule:
-#   git submodule add <AIDE-url> .claude/aide
+# Run this ONCE after cloning AIDE:
+#   git clone <AIDE-url> .claude/aide
 #   bash .claude/aide/aide-core/scripts/init.sh
 #
 # After this, /aide-init and /aide are available.
@@ -53,12 +53,12 @@ else:
     print('done: registered .claude/aide/skills in extraSkillDirs')
 "
 
-# Step 4: Verify submodule is fully set up
+# Step 4: Verify AIDE installation
 if [ ! -f .claude/aide/skills/aide/skill.md ]; then
     echo ""
     echo "WARNING: AIDE skill files not found at .claude/aide/skills/."
-    echo "The git submodule may not be initialized. Run:"
-    echo "  git submodule update --init .claude/aide"
+    echo "The AIDE repository may not be fully cloned. Run:"
+    echo "  git clone <AIDE-url> .claude/aide"
     exit 1
 fi
 

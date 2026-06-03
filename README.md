@@ -1,6 +1,6 @@
 # AIDE — AI-Driven Development Automation
 
-A Claude Code skill collection for structured, AI-driven development workflows. Business projects reference AIDE via git submodule to add `/aide` — a pipeline that takes a requirement and runs it through spec → plan → implement → test with human gates at each stage.
+A Claude Code skill collection for structured, AI-driven development workflows. Business projects reference AIDE via a plain git clone into `.claude/aide` to add `/aide` — a pipeline that takes a requirement and runs it through spec → plan → implement → test with human gates at each stage.
 
 ## Quick Start
 
@@ -8,9 +8,12 @@ A Claude Code skill collection for structured, AI-driven development workflows. 
 
 ```bash
 cd your-project/
-git submodule add <AIDE-repo-url> .claude/aide
+git clone <AIDE-repo-url> .claude/aide
+echo ".claude/aide/" >> .gitignore
 bash .claude/aide/aide-core/scripts/init.sh
 ```
+
+No `.gitmodules` needed — just a plain clone. Add `.claude/aide/` to `.gitignore` so it stays out of your project's history.
 
 This bootstrap script creates `.aide/`, copies the config template, and registers `.claude/aide/skills` as a plugin via `extraSkillDirs` in settings — so Claude Code discovers AIDE skills without touching `.claude/skills/`. Once bootstrapped, `/aide` and `/aide-update` are available.
 
@@ -33,7 +36,7 @@ When AIDE releases new features or fixes:
 /aide-update
 ```
 
-This pulls the latest AIDE submodule and re-runs bootstrap init to sync configuration. Safe to run mid-pipeline — won't affect your current `aide/*` branch.
+This pulls the latest AIDE code and re-runs bootstrap init to sync configuration. Safe to run mid-pipeline — won't affect your current `aide/*` branch.
 
 ### Customize gates
 
@@ -106,4 +109,4 @@ AIDE ships Superpowers skills directly in `skills/` — no nested submodule requ
 ## Requirements
 
 - Claude Code with skill support
-- Git (for submodule and auto-commits)
+- Git (for clone and auto-commits)
