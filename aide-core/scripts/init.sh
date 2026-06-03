@@ -10,11 +10,6 @@ set -euo pipefail
 # After this, /aide-init and /aide are available.
 # Safe to re-run — skips already-configured steps.
 
-SKILL_DIRS_KEY="extra_skill_dirs: [.claude/aide/skills]"
-FRONTMATTER="---
-$SKILL_DIRS_KEY
----"
-
 echo "=== AIDE Bootstrap Init ==="
 echo ""
 
@@ -34,40 +29,25 @@ else
     echo "[done]  .aide/config.yaml created from template"
 fi
 
-# Step 3: CLAUDE.md (YAML frontmatter format)
-if [ -f CLAUDE.md ]; then
-    if grep -qF '.claude/aide/skills' CLAUDE.md; then
-        echo "[skip]  CLAUDE.md already configured with AIDE skill directory"
-
-    elif head -1 CLAUDE.md | grep -q '^---$'; then
-        # Has existing YAML frontmatter — add extra_skill_dirs inside it
-        # Find the closing --- of the frontmatter block
-        CLOSING_LINE=$(grep -n '^---$' CLAUDE.md | sed -n '2p' | cut -d: -f1)
-        if [ -n "$CLOSING_LINE" ]; then
-            # Insert extra_skill_dirs before the closing ---
-            sed -i "${CLOSING_LINE}i\\${SKILL_DIRS_KEY}" CLAUDE.md
-            echo "[done]  Added extra_skill_dirs to existing frontmatter in CLAUDE.md"
-        else
-            # Frontmatter opened but not closed — just append after first ---
-            sed -i "1a\\${SKILL_DIRS_KEY}" CLAUDE.md
-            echo "[done]  Added extra_skill_dirs to frontmatter in CLAUDE.md"
-        fi
-
-    elif grep -q 'extra_skill_dirs' CLAUDE.md; then
-        # Has extra_skill_dirs outside frontmatter — merge into existing list
-        sed -i 's/extra_skill_dirs: \[\(.*\)\]/extra_skill_dirs: [\1, .claude\/aide\/skills]/' CLAUDE.md
-        echo "[done]  Added .claude/aide/skills to existing extra_skill_dirs in CLAUDE.md"
-
+# Step 3: Symlink skills into .claude/skills/
+# Claude Code auto-discovers skills from .claude/skills/<name>/SKILL.md.
+# AIDE skills live at .claude/aide/skills/, so we create a symlink.
+if [ -L .claude/skills ]; then
+    CURRENT_TARGET=$(readlink .claude/skills)
+    if [ "$CURRENT_TARGET" = "aide/skills" ]; then
+        echo "[skip]  .claude/skills already linked to aide/skills"
     else
-        # File exists but no frontmatter and no extra_skill_dirs — prepend frontmatter
-        echo "$FRONTMATTER" | cat - CLAUDE.md > CLAUDE.md.tmp && mv CLAUDE.md.tmp CLAUDE.md
-        echo "" >> CLAUDE.md
-        echo "[done]  Added extra_skill_dirs frontmatter to CLAUDE.md"
+        echo "[warn]  .claude/skills points to '$CURRENT_TARGET', replacing"
+        rm .claude/skills
+        ln -s aide/skills .claude/skills
+        echo "[done]  .claude/skills linked to aide/skills"
     fi
+elif [ -e .claude/skills ]; then
+    echo "[warn]  .claude/skills exists but is not a symlink — leaving as-is"
 else
-    echo "$FRONTMATTER" > CLAUDE.md
-    echo "" >> CLAUDE.md
-    echo "[done]  Created CLAUDE.md with AIDE skill directory configured"
+    mkdir -p .claude
+    ln -s aide/skills .claude/skills
+    echo "[done]  .claude/skills linked to aide/skills"
 fi
 
 # Step 4: Verify submodule is fully set up

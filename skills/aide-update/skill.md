@@ -25,7 +25,7 @@ If this fails (e.g., network error, merge conflict), report the error and stop.
 bash .claude/aide/aide-core/scripts/init.sh
 ```
 
-This is the same idempotent bootstrap script used during initial install. It syncs `.aide/config.yaml` template changes and ensures `CLAUDE.md` has the correct `extra_skill_dirs`.
+This is the same idempotent bootstrap script used during initial install. It syncs `.aide/config.yaml` template changes and ensures `.claude/skills` is linked to `aide/skills`.
 
 ### Step 3: Report
 
@@ -33,8 +33,8 @@ Show what changed:
 
 ```
 AIDE updated to <new-commit-short>.
-  .aide/config.yaml  — up to date (or: updated)
-  CLAUDE.md          — up to date (or: updated)
+  .aide/config.yaml   — up to date (or: updated)
+  .claude/skills      — up to date (or: re-linked)
 ```
 
 If the working tree has uncommitted changes in `.claude/aide/` after the pull, warn the user:

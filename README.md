@@ -12,7 +12,7 @@ git submodule add <AIDE-repo-url> .claude/aide
 bash .claude/aide/aide-core/scripts/init.sh
 ```
 
-This bootstrap script creates `.aide/`, copies the config template, and adds `extra_skill_dirs: [.claude/aide/skills]` to `CLAUDE.md`. Once bootstrapped, `/aide` and `/aide-update` are available.
+This bootstrap script creates `.aide/`, copies the config template, and links `.claude/skills` → `aide/skills` so Claude Code discovers AIDE skills. Once bootstrapped, `/aide` and `/aide-update` are available.
 
 ### Run the pipeline
 
