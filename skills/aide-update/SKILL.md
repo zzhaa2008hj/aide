@@ -1,27 +1,37 @@
 ---
 name: aide-update
 description: >-
-  Update AIDE to the latest version via claude plugin update with project scope
-  priority. Safe to run anytime.
+  Update AIDE to the latest version. Refreshes marketplace definition first,
+  then updates the plugin. Safe to run anytime.
 ---
 
 # aide-update — Update AIDE
 
-You update the AIDE installation in a business project. AIDE defaults to project scope — try project-scoped update first, then fall back to user scope.
+You update the AIDE installation in a business project. The update requires two steps: refresh the marketplace to get the latest plugin definition, then update the plugin itself.
 
 ## Process
 
-### Step 1: Update the plugin
+### Step 1: Refresh marketplace
 
-Try project scope first, fall back to user scope:
+This pulls the latest `marketplace.json` from the AIDE source repo:
 
 ```bash
-claude plugin update aide --scope project 2>/dev/null || claude plugin update aide
+claude plugin marketplace update aide
 ```
 
-If both fail (e.g., network error), report the error and stop.
+If this fails (e.g., network error), report the error and stop.
 
-### Step 2: Re-bootstrap config
+### Step 2: Update the plugin
+
+```bash
+claude plugin update aide@aide --scope project
+```
+
+This checks the refreshed marketplace definition and pulls the latest plugin code if a newer version is available.
+
+If already at the latest version, report that and skip the remaining steps.
+
+### Step 3: Re-bootstrap config
 
 Invoke the aide-init skill to sync `.aide/` and config template:
 
@@ -29,18 +39,21 @@ Invoke the aide-init skill to sync `.aide/` and config template:
 Use the Skill tool to invoke aide-init
 ```
 
-### Step 3: Report
+### Step 4: Report
 
 Show what changed:
 
 ```
 AIDE updated to latest.
-  Plugin               — updated via claude plugin update (project scope)
+  Marketplace           — refreshed from source
+  Plugin                — updated to <version>
   .aide/config.yaml     — up to date (or: updated via aide-init)
+
+Restart Claude Code for updated skills to take effect.
 ```
 
 ## Important Guidelines
 
-- Always try `--scope project` first — AIDE is installed as a project plugin by default.
+- Always refresh the marketplace BEFORE updating the plugin. The marketplace contains the version info.
 - If the user is mid-pipeline (on an `aide/*` branch), warn them but proceed — updating AIDE won't affect their current branch's pipeline state.
-- A restart of Claude Code may be required for updated skills to take effect.
+- A restart of Claude Code is required for updated skills to take effect.
