@@ -279,7 +279,7 @@ The implement stage does not use a single skill. Instead, the orchestrator reads
 
 Before entering the implement stage, verify:
 1. `plan.json` exists at `.aide/output/2-plan/plan.json`
-2. Superpowers skills are available at `.claude/aide/superpowers/skills/`
+2. Superpowers skills are available at `.claude/aide/skills/`
 3. All previous stages' gates have passed
 
 ### Step 3.1: Load plan.json
