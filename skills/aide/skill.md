@@ -32,7 +32,71 @@ You are the **orchestrator** of the AIDE (AI-Driven Development Automation) pipe
 
 ## Startup Sequence
 
-When the user invokes the `aide` skill, follow this startup sequence:
+When the user invokes the `aide` skill, follow this startup sequence.
+
+### Step 0: Branch Preparation (new pipeline) or Branch Validation (--continue)
+
+**If the user passed `--continue`:**
+
+1. Get the current branch name:
+   ```bash
+   git branch --show-current
+   ```
+2. If the current branch does NOT start with `aide/`:
+   - Report: "`--continue` requires you to be on an `aide/*` branch. Current branch: `<name>`. Please switch to the correct branch and try again."
+   - Abort.
+3. If the current branch IS an `aide/*` branch:
+   - Report: "Resuming pipeline on branch `<current-branch>`."
+   - Skip the rest of Step 0 and proceed to Step 1.
+
+**If this is a new pipeline (no `--continue`):**
+
+1. **Generate a slug** from the user's requirement description. Follow these rules:
+   - Extract 3-5 core keywords, convert to lowercase, join with `-`
+   - Use only letters, numbers, and hyphens
+   - Example: `"Add user login with OAuth support"` → `user-login-oauth`
+   - Example: `"Build a REST API for orders"` → `rest-api-orders`
+
+2. **Construct the branch name**: `aide/<slug>`
+
+3. **Check for existing branches with the same name**:
+   ```bash
+   git branch --list "aide/<slug>*"
+   ```
+   - If the exact name exists, append `-2`, `-3`, etc. until a free name is found.
+   - Example: `aide/user-login-oauth` exists → try `aide/user-login-oauth-2`, then `aide/user-login-oauth-3`, etc.
+
+4. **Record the original branch**:
+   ```bash
+   git branch --show-current
+   ```
+   Store this as `ORIG_BRANCH`. If the user is in detached HEAD state, record the commit hash instead.
+
+5. **Check for uncommitted changes**:
+   ```bash
+   git status --porcelain
+   ```
+   - If there are uncommitted changes (dirty working tree):
+     ```bash
+     git stash push -m "AIDE: auto-stash before aide/<slug>"
+     ```
+     Record that a stash was created so it can be reported later.
+   - If stash fails, report the error and abort.
+
+6. **Create and switch to the new branch**:
+   ```bash
+   git checkout -b aide/<slug>
+   ```
+   - If this fails: restore the stash (if one was created) with `git stash pop`, report the error, and abort.
+
+7. **Report**:
+   ```
+   Created branch aide/<slug> (from <ORIG_BRANCH>). Pipeline artifacts will be committed here.
+   ```
+   If a stash was created:
+   ```
+   Uncommitted changes stashed. Restore with: git stash pop
+   ```
 
 ### Step 1: Read conventions
 
