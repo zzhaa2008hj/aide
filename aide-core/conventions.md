@@ -43,6 +43,8 @@ The implement stage does not have a standalone skill. The orchestrator reads `pl
 
 Every stage MUST produce both `.md` and `.json` outputs. The `.json` output must conform to the corresponding schema in `aide-core/schemas/`.
 
+**Exception**: The implement stage (3-implement) only produces `implement.json`. Its primary output is code changes, so a human-readable summary is presented inline by the orchestrator rather than written to a separate `.md` file.
+
 ## Git
 
 After each stage completes, AIDE auto-commits only `.aide/` files with message format:

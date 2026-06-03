@@ -313,13 +313,13 @@ T002 ready (T001 already done)
 T004 ready
 ```
 
-A task whose dependency has been marked blocked (status = `blocked`) remains waiting indefinitely — do not unlock it.
+A task whose dependency has been marked blocked (status = `blocked`) remains waiting indefinitely — do not unlock it. After each dispatch round, if the ready queue is empty and ALL remaining waiting tasks have at least one blocked dependency, mark those waiting tasks as blocked (reason: "dependency blocked") and exit the loop.
 
 ### Step 3.3: Dispatch Per-Task Subagent Loop
 
 For each task in the ready queue, dispatch through Superpowers' subagent-driven-development pattern:
 
-1. **Load Superpowers**: Use the Skill tool to invoke `superpowers:subagent-driven-development`. Pass the constructed implementer prompt as the `args` parameter, and the task's `id` as part of the description so subagent progress is traceable.
+1. **Load Superpowers**: Use the Skill tool to invoke `superpowers:subagent-driven-development`. Pass the constructed implementer prompt as the `args` parameter. Include the task ID (e.g., `[T001]`) at the beginning of the args string so subagent progress is traceable.
 
 2. **Construct the implementer prompt** with:
    - The task's `description` and `files_to_touch` from plan.json
@@ -336,7 +336,9 @@ For each task in the ready queue, dispatch through Superpowers' subagent-driven-
    - Review fails -> return to implementer with feedback, retry (max 2 rounds). If still failing after 2 rounds -> task status = `blocked`. Record `reason`.
    - Subagent crashes or times out -> task status = `blocked`. Record `reason`.
 
-5. **Continue** until the ready queue is empty and no tasks are still waiting (all are `done` or `blocked`).
+5. **Deadlock check**: After each dispatch round, if the ready queue is empty and every remaining waiting task has at least one blocked dependency, mark those waiting tasks as blocked (reason: "dependency blocked") and exit the loop.
+
+6. **Continue** until the ready queue is empty and no tasks are still waiting (all are `done` or `blocked`).
 
 ### Step 3.4: Aggregate Results
 
