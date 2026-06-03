@@ -282,10 +282,20 @@ After all enabled stages have completed (or the pipeline was aborted), present a
 | implement | Skipped  | —                                        |
 | test    | Skipped    | —                                        |
 
-Pipeline artifacts are in .aide/output/.
+Branch: aide/<slug>
+Original branch: <ORIG_BRANCH>
+
+Next steps:
+  git checkout <ORIG_BRANCH> && git merge aide/<slug>
 ```
 
-If aborted early, show what was completed and note: "Resume with `/aide --continue`."
+If a stash was created in Step 0, append:
+
+```
+Auto-stashed changes: run `git stash list` to review.
+```
+
+If aborted early, show what was completed and note: "Resume on branch `aide/<slug>` with `/aide --continue`."
 
 ---
 
