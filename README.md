@@ -9,15 +9,10 @@ A Claude Code skill collection for structured, AI-driven development workflows. 
 ```bash
 cd your-project/
 git submodule add <AIDE-repo-url> .claude/aide
+bash .claude/aide/aide-core/scripts/init.sh
 ```
 
-Then run the init skill to set up your project:
-
-```
-/aide-init
-```
-
-This creates `.aide/`, copies the config template, and adds `extra_skill_dirs: [.claude/aide/skills]` to your `CLAUDE.md` (creating it if needed). Safe to re-run — skips already-configured steps.
+This bootstrap script creates `.aide/`, copies the config template, and adds `extra_skill_dirs: [.claude/aide/skills]` to `CLAUDE.md`. Once bootstrapped, `/aide-init` and `/aide` are available. Both the script and `/aide-init` are idempotent — safe to re-run.
 
 ### Run the pipeline
 
@@ -36,6 +31,7 @@ When AIDE releases new features or fixes, update the submodule in your project a
 
 ```bash
 git -C .claude/aide pull origin master
+bash .claude/aide/aide-core/scripts/init.sh
 ```
 
 Then re-run `/aide-init` to apply any new configuration. It's safe to re-run — it only adds what's missing and never overwrites your existing `CLAUDE.md` content or `.aide/config.yaml`.
