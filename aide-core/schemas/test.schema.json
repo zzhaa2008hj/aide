@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aide.dev/schemas/test.schema.json",
+  "title": "Test Report",
+  "description": "Schema for the structured output of the test stage (aide-test skill).",
+  "type": "object",
+  "required": ["test_suite", "spec_verification", "verdict"],
+  "properties": {
+    "test_suite": {
+      "type": "object",
+      "required": ["passed", "failed", "skipped"],
+      "properties": {
+        "passed":  { "type": "integer", "minimum": 0 },
+        "failed":  { "type": "integer", "minimum": 0 },
+        "skipped": { "type": "integer", "minimum": 0 },
+        "command": { "type": "string" },
+        "output":  { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "spec_verification": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["feature_id", "criteria", "status"],
+        "properties": {
+          "feature_id": { "type": "string", "pattern": "^F\\d{3}$" },
+          "criteria":   { "type": "string", "minLength": 1 },
+          "status":     { "type": "string", "enum": ["pass", "fail", "untestable"] },
+          "evidence":   { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "properties": {
+        "files_with_tests":    { "type": "array", "items": { "type": "string" } },
+        "files_without_tests": { "type": "array", "items": { "type": "string" } },
+        "overall":             { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "verdict": {
+      "type": "string",
+      "enum": ["pass", "fail", "manual"]
+    }
+  },
+  "additionalProperties": false
+}
