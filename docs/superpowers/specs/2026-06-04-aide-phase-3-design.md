@@ -34,6 +34,19 @@ Phase 3 adds the final pipeline stage: test verification. A new `aide-test` skil
 | All passed | Has failures | — | `fail` |
 | Cannot run | — | — | `manual` |
 
+### Post-Verdict Flow
+
+After the test report is written, the `after_test` gate runs. Gate behavior depends on verdict:
+
+**`pass`** — Gate opens as normal (`confirm` / `confirm_skip` / `auto`). User sees the test report summary and confirms. On gate pass: commit, update state.json to `complete`, pipeline exits.
+
+**`fail`** — Gate opens with additional context: the specific failures are displayed before the gate prompt. User chooses:
+- `y` — Accept the failures and proceed (pipeline completes, failures noted in commit)
+- `n` — Reject. User provides feedback, orchestrator feeds it back to the implement stage to fix failing areas, then re-runs the test stage
+- `skip` (if `confirm_skip`) — Accept and proceed, same as `y`
+
+**`manual`** — Gate MUST be `confirm` (override `confirm_skip` or `auto`). User MUST manually verify since automated checks couldn't run. On gate pass: commit with `verdict: manual`, pipeline completes.
+
 ### Test Command Detection
 
 Try in order:
