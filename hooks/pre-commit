@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# pre-commit hook — Auto-bump marketplace.json + plugin.json version
+# when functional files are staged for commit.
+#
+# Rules (matches bump-version.sh):
+#   Same branch (master/main) → patch bump (x.y.Z)
+#   Feature branch            → minor bump (x.Y.z)
+#
+# Install: ln -sf ../../hooks/pre-commit .git/hooks/pre-commit
+
+set -euo pipefail
+
+# Tracked functional paths (changes here trigger auto-bump)
+FUNCTIONAL_PATHS=("skills/" "aide-core/" "templates/" "hooks/")
+
+# Check if functional files are staged
+STAGED=$(git diff --cached --name-only 2>/dev/null || echo "")
+[ -z "$STAGED" ] && exit 0
+
+FUNC_STAGED=false
+for path in "${FUNCTIONAL_PATHS[@]}"; do
+    if echo "$STAGED" | grep -q "^$path"; then
+        FUNC_STAGED=true
+        break
+    fi
+done
+
+# Only auto-bump if functional files changed
+[ "$FUNC_STAGED" = false ] && exit 0
+
+# Run bump-version.sh (silent mode — it handles branch detection)
+REPO_ROOT=$(git rev-parse --show-toplevel)
+BASH_SCRIPT="$REPO_ROOT/aide-core/scripts/bump-version.sh"
+
+if [ -x "$BASH_SCRIPT" ]; then
+    bash "$BASH_SCRIPT" --silent
+    # Stage the bumped files so they're included in this commit
+    git add "$REPO_ROOT/.claude-plugin/"
+fi
+
+exit 0

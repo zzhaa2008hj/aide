@@ -46,18 +46,23 @@ with open('.claude-plugin/plugin.json', 'w') as f:
     f.write('\n')
 "
 
-# Ensure pre-push hook is installed (idempotent)
-HOOK_SRC="$(cd "$(dirname "$0")" && pwd)/../../hooks/pre-push"
-HOOK_DST="$(git rev-parse --git-dir)/hooks/pre-push"
-if [ ! -L "$HOOK_DST" ] && [ ! -e "$HOOK_DST" ]; then
-    ln -sf "$(realpath "$HOOK_SRC")" "$HOOK_DST"
-    echo "Hook installed: pre-push"
-fi
+# Ensure hooks are installed (idempotent)
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+for hook in pre-commit pre-push; do
+    HOOK_SRC="$SCRIPT_DIR/../../hooks/$hook"
+    HOOK_DST="$(git rev-parse --git-dir)/hooks/$hook"
+    if [ ! -L "$HOOK_DST" ] && [ ! -e "$HOOK_DST" ]; then
+        ln -sf "$(realpath "$HOOK_SRC")" "$HOOK_DST"
+        echo "Hook installed: $hook"
+    fi
+done
 
-echo "Version bumped: $OLD_VERSION → $NEW_VERSION  (branch: $BRANCH, mode: $MODE)"
-echo ""
-echo "Next steps:"
-echo "  git add .claude-plugin/"
-echo "  git commit -m 'chore: bump version to $NEW_VERSION'"
-echo "  git tag aide--v$NEW_VERSION"
-echo "  git push"
+if [ "${1:-}" != "--silent" ] && [ "${2:-}" != "--silent" ]; then
+    echo "Version bumped: $OLD_VERSION → $NEW_VERSION  (branch: $BRANCH, mode: $MODE)"
+    echo ""
+    echo "Next steps:"
+    echo "  git add .claude-plugin/"
+    echo "  git commit -m 'chore: bump version to $NEW_VERSION'"
+    echo "  git tag aide--v$NEW_VERSION"
+    echo "  git push"
+fi
