@@ -186,7 +186,21 @@ Each gate entry has `name`, `type`, and `prompt` as top-level keys. Unknown gate
 
 ### Step 5: Determine starting stage
 
-Start from the `spec` stage by default. If `.aide/state.json` exists, read it to determine where to resume (future: state persistence for `--continue` across sessions).
+If the user passed `--continue`, read `.aide/state.json` to determine where to resume:
+
+```bash
+cat .aide/state.json 2>/dev/null || echo '{"current_stage": "spec"}'
+```
+
+Parse `current_stage` — this is the stage that was in progress when the pipeline was interrupted. Resume from this stage. Already-completed stages (listed in `completed_stages`) are skipped.
+
+If `--continue` was NOT passed (new pipeline), start from `spec` and initialize state.json:
+
+```json
+{"pipeline": "<slug>", "current_stage": "spec", "completed_stages": [], "last_updated": "<timestamp>"}
+```
+
+Write to `.aide/state.json`.
 
 ### Step 6: Announce the plan
 
@@ -199,6 +213,10 @@ Tell the user which stages will run, in what order, and list the enabled stages 
 ## Stage Execution Loop
 
 For each enabled stage in order (spec → plan → implement → test), execute the following flow:
+
+### 0. Check resume state
+
+If `--continue` was passed, check `.aide/state.json`. If the current stage is in `completed_stages`, skip it and move to the next. Report: "Skipping <stage> (already completed)."
 
 ### 1. Display Progress
 
@@ -309,6 +327,24 @@ After all gates for a stage pass, commit the pipeline artifacts:
    - Do not block the commit — just warn.
 4. **Create the commit**: Use `git commit` with the message format above.
 5. **Capture the commit hash**: Store the commit hash for the completion report.
+6. **Update state.json**: After the commit, update `.aide/state.json` — move `current_stage` to the next enabled stage (or mark as `complete` if this was the last stage), and add the just-completed stage to `completed_stages`.
+
+```bash
+python3 -c "
+import json
+with open('.aide/state.json') as f:
+    state = json.load(f)
+state['completed_stages'].append(state['current_stage'])
+# Move to next stage
+order = ['spec', 'plan', 'implement', 'test']
+idx = order.index(state['current_stage'])
+state['current_stage'] = order[idx + 1] if idx + 1 < len(order) else 'complete'
+state['last_updated'] = '$(date -u +%Y-%m-%dT%H:%M:%SZ)'
+with open('.aide/state.json', 'w') as f:
+    json.dump(state, f, indent=2)
+    f.write('\n')
+"
+```
 
 ### Example Commit Sequence
 
