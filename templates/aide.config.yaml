@@ -32,10 +32,9 @@ stages:
         type: auto
         prompt: "Code changes complete. Review the summary above."
 
-  # Phase 3
-  # test:
-  #   enabled: false
-  #   gates:
-  #     - name: after_test
-  #       type: confirm
-  #       prompt: "Test report ready. Verification passed? (y/n)"
+  test:
+    enabled: true
+    gates:
+      - name: after_test
+        type: auto
+        prompt: "Test verification complete."

@@ -36,9 +36,9 @@ When invoking stage skills, pass the full context so the stage can work autonomo
 | 1     | spec      | `aide-spec` skill               | Requirements → Specification        |
 | 2     | plan      | `aide-plan` skill               | Specification → Task plan           |
 | 3     | implement | Orchestrator + Superpowers      | Tasks → Code (subagent per task)    |
-| 4     | test      | `aide-test` skill (Phase 3)     | Verification → Test report          |
+| 4     | test      | `aide-test` skill                | Verification → Test report          |
 
-The implement stage has no standalone skill. The orchestrator loads Superpowers' `subagent-driven-development` skill and dispatches each task in `plan.json` through implement → spec review → code quality review cycles. The test stage (`aide-test` skill) is planned for Phase 3 — it is not yet implemented.
+The implement stage has no standalone skill. The orchestrator loads Superpowers' `subagent-driven-development` skill and dispatches each task in `plan.json` through implement → spec review → code quality review cycles. The test stage (`aide-test` skill) is the final pipeline stage — verification with auto-retry.
 
 All four pipeline stages are available: spec → plan → implement → test.
 
@@ -166,8 +166,11 @@ stages:
         type: auto
         prompt: "Code changes complete. Review the summary above."
   test:
-    enabled: false
-    gates: []
+    enabled: true
+    gates:
+      - name: after_test
+        type: auto
+        prompt: "Test verification complete."
 ```
 
 If `.aide/config.yaml` exists, parse it. The config structure uses **flat** gate entries:
@@ -243,6 +246,7 @@ After the stage skill reports completion, verify that the expected output files 
 
 - `spec` stage: `.aide/output/1-spec/spec.md` and `.aide/output/1-spec/spec.json`
 - `plan` stage: `.aide/output/2-plan/plan.md` and `.aide/output/2-plan/plan.json`
+- `test` stage: `.aide/output/4-test/test-report.md` and `.aide/output/4-test/test-report.json`
 
 If output files are missing or validation was not performed, instruct the user and request they re-run the stage.
 
@@ -469,6 +473,94 @@ Present the implement stage summary:
 ```
 
 Then proceed to the gate checkpoint for `after_implement` (default: `auto`).
+
+---
+
+## Stage 4: Test (Verification)
+
+The test stage invokes the `aide-test` skill and implements a retry loop for failures.
+
+### Prerequisites
+
+Before entering the test stage, verify:
+1. `implement.json` exists at `.aide/output/3-implement/implement.json`
+2. At least one task is in `completed_tasks` (if all blocked, skip test stage with a note)
+
+### Step 4.1: Initialize retry tracking
+
+If `.aide/state.json` does not have a `test_retries` field, set it to 0:
+
+```bash
+python3 -c "
+import json
+with open('.aide/state.json') as f:
+    state = json.load(f)
+state.setdefault('test_retries', 0)
+with open('.aide/state.json', 'w') as f:
+    json.dump(state, f, indent=2)
+    f.write('\n')
+"
+```
+
+### Step 4.2: Invoke aide-test skill
+
+Load the `aide-test` skill via the Skill tool. Pass the implement stage summary as context.
+
+After the skill completes, verify `.aide/output/4-test/test-report.json` and `.aide/output/4-test/test-report.md` exist.
+
+### Step 4.3: Evaluate verdict
+
+Read `verdict` from `test-report.json`:
+
+**If `pass`**: Gate is `auto`. Commit, update state.json (`current_stage: "complete"`), pipeline exits. No user interaction.
+
+**If `fail`**:
+1. Read `test_retries` from state.json
+2. If `test_retries < 3`:
+   - Increment `test_retries` in state.json
+   - Feed failure details (test_suite failures + spec_verification fails) back to Stage 3 implement
+   - Re-dispatch failing tasks, re-run implement → re-run test stage
+3. If `test_retries >= 3`:
+   - Override gate to `confirm`
+   - Present failure summary and prompt: "Test stage failed 3 times. Accept and proceed? (y/n)"
+   - `y` → Accept. User handles remaining issues. Commit, pipeline exits.
+   - `n` → Reset `test_retries` to 0 in state.json. Feed back to implement, retry another 3 rounds.
+
+**If `manual`**:
+1. Same retry logic as `fail` (max 3 auto-retries, then confirm gate)
+2. Auto-retry feeds "test framework not detected" back to implement stage
+3. Confirm prompt: "Test framework still not detected after 3 attempts. Accept and proceed? (y/n)"
+
+### Step 4.4: Update state.json
+
+After test stage completes (verdict `pass` or user accepts), update state.json:
+
+```bash
+python3 -c "
+import json
+with open('.aide/state.json') as f:
+    state = json.load(f)
+state['completed_stages'].append('test')
+state['current_stage'] = 'complete'
+state['last_updated'] = '$(date -u +%Y-%m-%dT%H:%M:%SZ)'
+state.pop('test_retries', None)
+with open('.aide/state.json', 'w') as f:
+    json.dump(state, f, indent=2)
+    f.write('\n')
+"
+```
+
+### Step 4.5: Report
+
+```
+[aide] Test stage complete:
+  Verdict: pass
+  Tests: 12 passed, 0 failed, 2 skipped
+  Spec: 5/5 criteria verified
+  Coverage: 100%
+
+Pipeline complete. All 4 stages done.
+```
 
 ---
 
