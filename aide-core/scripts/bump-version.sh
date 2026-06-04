@@ -17,6 +17,14 @@ elif [ "$BRANCH" != "master" ] && [ "$BRANCH" != "main" ]; then
 fi
 
 OLD_VERSION=$(python3 -c "import json; d=json.load(open('.claude-plugin/marketplace.json')); print(d['plugins'][0]['version'])")
+PLUGIN_VERSION=$(python3 -c "import json; d=json.load(open('.claude-plugin/plugin.json')); print(d['version'])")
+
+if [ "$OLD_VERSION" != "$PLUGIN_VERSION" ]; then
+    echo "ERROR: Version mismatch before bump — marketplace.json: $OLD_VERSION, plugin.json: $PLUGIN_VERSION"
+    echo "Both files must have the same version. Please fix manually before bumping."
+    exit 1
+fi
+
 IFS='.' read -r MAJ MIN PAT <<< "$OLD_VERSION"
 
 case "$MODE" in

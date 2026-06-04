@@ -127,7 +127,7 @@ Batch independent operations together. When invoking a stage skill, pass the com
 ### Step 2: Read conventions
 
 Read the AIDE conventions document. Find it by searching for `aide-core/conventions.md` in these locations (in order):
-1. `~/.claude/plugins/cache/aide/*/aide/aide-core/conventions.md` (installed via claude plugin install)
+1. `~/.claude/plugins/cache/aide/aide/*/aide-core/conventions.md` (installed via claude plugin install)
 2. `.claude/plugins/aide/aide-core/conventions.md` (project directory)
 3. `.claude/aide/aide-core/conventions.md` (legacy)
 
@@ -242,7 +242,7 @@ If the stage skill invocation fails or produces no output:
 
 ## Gate Checkpoints
 
-After a stage completes successfully, run its configured gates. The gate configuration comes from the stage's `gates` list in `.aide/config.yaml` (or the defaults).
+After a stage completes successfully, run its configured gates. The gate configuration comes from the stage's `gates` list in `.aide/config.yaml` (or the defaults). See `aide-core/gate.md` for the complete gate engine specification.
 
 ### Process for Each Gate
 

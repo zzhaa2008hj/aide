@@ -104,6 +104,23 @@ for skill in $UPSTREAM_SKILLS; do
     fi
 done
 
+# ---- check for deleted upstream skills ----
+
+declare -a DELETED=()
+for skill in $BASELINE_SKILLS; do
+    if [ -d "$SKILLS_DIR/$skill" ] && ! echo "$UPSTREAM_SKILLS" | grep -qxF "$skill"; then
+        DELETED+=("$skill")
+    fi
+done
+
+if [ ${#DELETED[@]} -gt 0 ]; then
+    echo ""
+    echo "--- Deleted upstream ---"
+    for skill in "${DELETED[@]}"; do
+        echo "[warn]  $skill — deleted from upstream, still in AIDE. Review manually."
+    done
+fi
+
 # ---- auto-copy unchanged skills ----
 
 if [ ${#NEW[@]} -gt 0 ] || [ ${#UNCHANGED[@]} -gt 0 ]; then

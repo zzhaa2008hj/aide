@@ -1,2 +1,4 @@
-# AIDE development artifacts (not business project artifacts)
+# Pipeline output — gitignored even in AIDE's own repo.
+# When developing AIDE itself, pipeline runs produce .aide/ artifacts
+# that should not be committed to the AIDE source tree.
 .aide/
