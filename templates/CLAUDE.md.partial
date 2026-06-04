@@ -15,3 +15,7 @@ The pipeline follows: requirements → spec → plan → implement → test. Eac
 ### Configuration
 
 Edit `.aide/config.yaml` to adjust gate types (confirm / confirm_skip / auto) or disable stages.
+
+## AIDE Conventions
+
+- When providing multiple options (beyond yes/no), always mark one as "(Recommended)" and include a brief one-sentence reason.

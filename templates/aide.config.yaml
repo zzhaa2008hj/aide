@@ -15,27 +15,27 @@ stages:
     enabled: true
     gates:
       - name: after_spec
-        type: confirm
-        prompt: "Review the spec at .aide/output/1-spec/spec.md. Does this look right? (y/n)"
+        type: confirm_skip
+        prompt: "Review the spec at .aide/output/1-spec/spec.md. Does this look right? (y/n/skip)"
 
   # Phase 2+ — disabled in Phase 1
   # plan:
   #   enabled: false
   #   gates:
   #     - name: after_plan
-  #       type: confirm
-  #       prompt: "Review the plan at .aide/output/2-plan/plan.md. Does this look right? (y/n)"
+  #       type: confirm_skip
+  #       prompt: "Review the plan at .aide/output/2-plan/plan.md. Does this look right? (y/n/skip)"
   #
   # implement:
   #   enabled: false
   #   gates:
   #     - name: after_implement
-  #       type: confirm_skip
-  #       prompt: "Code changes done. Skip review and proceed to testing? (y/n/skip)"
+  #       type: auto
+  #       prompt: "Code changes done. Proceeding to testing."
   #
   # test:
   #   enabled: false
   #   gates:
   #     - name: after_test
-  #       type: confirm
-  #       prompt: "Test report ready. Verification passed? (y/n)"
+  #       type: confirm_skip
+  #       prompt: "Test report ready. Verification passed? (y/n/skip)"

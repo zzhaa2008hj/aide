@@ -11,6 +11,18 @@ description: >-
 
 You are the **orchestrator** of the AIDE (AI-Driven Development Automation) pipeline. Your job is to coordinate the pipeline stages from start to finish. You do NOT write specifications, plans, code, or tests directly. You invoke the appropriate stage skill for each step, run gate checkpoints for human review, and commit pipeline artifacts.
 
+## Permissions
+
+To minimize interruptions during pipeline execution, request these permissions up front at the start of each stage:
+
+- **Bash**: Run commands, manage git, install dependencies, run tests
+- **Write/Edit**: Create and modify all project files
+- **Read**: Read any file in the project
+- **Skill**: Invoke stage skills (aide-spec, aide-plan, aide-test, subagent-driven-development, etc.)
+- **TaskCreate/TaskUpdate**: Track progress within stages
+
+When invoking stage skills, pass the full context so the stage can work autonomously. Batch independent operations to reduce round-trips.
+
 ## Core Principle
 
 **Orchestrate, do not develop.** When a stage needs work done, load the corresponding stage skill and let it handle the work. Your role is coordination: track progress, manage gates, handle errors, and report results.
@@ -28,7 +40,7 @@ You are the **orchestrator** of the AIDE (AI-Driven Development Automation) pipe
 
 The implement stage has no standalone skill. The orchestrator loads Superpowers' `subagent-driven-development` skill and dispatches each task in `plan.json` through implement → spec review → code quality review cycles.
 
-**Current phase**: Phase 1 — spec stage is active. Plan stage (Phase 2) will produce the `plan.json` that Stage 3 consumes. Stages 3-4 defined for forward compatibility.
+All four pipeline stages are available: spec → plan → implement → test.
 
 ---
 
@@ -36,7 +48,19 @@ The implement stage has no standalone skill. The orchestrator loads Superpowers'
 
 When the user invokes the `aide` skill, follow this startup sequence.
 
-### Step 0: Branch Preparation (new pipeline) or Branch Validation (--continue)
+### Step 0: Grant permissions
+
+At the start, grant yourself maximum permissions to avoid repeated confirmations during the pipeline:
+
+- Use `Bash` for all git operations, file system tasks, and script execution
+- Use `Write` and `Edit` for all file creation and modification
+- Use `Read` for all file reading
+- Use `Skill` to invoke stage skills
+- Use `TaskCreate` and `TaskUpdate` to track pipeline progress
+
+Batch independent operations together. When invoking a stage skill, pass the complete context so it can work autonomously without follow-up questions.
+
+### Step 1: Branch Preparation (new pipeline) or Branch Validation (--continue)
 
 **If the user passed `--continue`:**
 
@@ -49,7 +73,7 @@ When the user invokes the `aide` skill, follow this startup sequence.
    - Abort.
 3. If the current branch IS an `aide/*` branch:
    - Report: "Resuming pipeline on branch `<current-branch>`."
-   - Skip the rest of Step 0 and proceed to Step 1.
+   - Skip the rest of Step 1 and proceed to Step 2.
 
 **If this is a new pipeline (no `--continue`):**
 
@@ -100,7 +124,7 @@ When the user invokes the `aide` skill, follow this startup sequence.
    Uncommitted changes stashed. Restore with: git stash pop
    ```
 
-### Step 1: Read conventions
+### Step 2: Read conventions
 
 Read the AIDE conventions document. Find it by searching for `aide-core/conventions.md` in these locations (in order):
 1. `~/.claude/plugins/cache/aide/*/aide/aide-core/conventions.md` (installed via claude plugin install)
@@ -109,11 +133,11 @@ Read the AIDE conventions document. Find it by searching for `aide-core/conventi
 
 This establishes the directory layout, stage order, and git conventions.
 
-### Step 2: Determine business project root
+### Step 3: Determine business project root
 
 The business project root is the current working directory. All `.aide/` paths are relative to this directory. Find the AIDE installation by searching `~/.claude/plugins/cache/aide/` first, then `.claude/plugins/aide/`, then `.claude/aide/` (legacy).
 
-### Step 3: Load configuration
+### Step 4: Load configuration
 
 Read configuration from `.aide/config.yaml`. If the file does not exist or cannot be read, use the following hardcoded defaults:
 
@@ -130,8 +154,11 @@ stages:
         type: confirm
         prompt: "Review the spec at .aide/output/1-spec/spec.md. Does this look right? (y/n)"
   plan:
-    enabled: false
-    gates: []
+    enabled: true
+    gates:
+      - name: after_plan
+        type: confirm_skip
+        prompt: "Review the plan at .aide/output/2-plan/plan.md. Does this look right? (y/n/skip)"
   implement:
     enabled: false
     gates: []
@@ -154,11 +181,11 @@ stages:
 
 Each gate entry has `name`, `type`, and `prompt` as top-level keys. Unknown gate types are treated as `confirm` with a warning.
 
-### Step 4: Determine starting stage
+### Step 5: Determine starting stage
 
 In Phase 1, always start from the `spec` stage. For future phases, check `.aide/state.json` if it exists to determine where to resume.
 
-### Step 5: Announce the plan
+### Step 6: Announce the plan
 
 Tell the user which stages will run, in what order, and list the enabled stages clearly. Example:
 
@@ -194,6 +221,7 @@ Use the Skill tool to invoke the skill, passing the user's original request (plu
 After the stage skill reports completion, verify that the expected output files exist:
 
 - `spec` stage: `.aide/output/1-spec/spec.md` and `.aide/output/1-spec/spec.json`
+- `plan` stage: `.aide/output/2-plan/plan.md` and `.aide/output/2-plan/plan.json`
 
 If output files are missing or validation was not performed, instruct the user and request they re-run the stage.
 
@@ -226,6 +254,14 @@ After a stage completes successfully, run its configured gates. The gate configu
      - After receiving feedback, re-invoke the current stage skill with the feedback appended.
      - After the stage re-runs, restart all gates for this stage from the beginning.
 
+   For type `confirm_skip`:
+   - User types `y` or `yes` → Gate passes. Continue.
+   - User types `skip` → Gate passes (skipped). Continue.
+   - User types `n` or `no` → Gate rejected (same feedback flow as `confirm`).
+
+   For type `auto`:
+   - Gate passes automatically. No user input required.
+
    For unknown gate types:
    - Log a warning: `"Unknown gate type '<type>', treating as 'confirm'"`
    - Proceed as if type is `confirm`.
@@ -238,15 +274,19 @@ After a stage completes successfully, run its configured gates. The gate configu
 for each gate in stage_config.gates:
     if gate.type is unknown:
         warn and treat as "confirm"
-    if gate.type == "confirm":
+    if gate.type == "confirm" or gate.type == "confirm_skip":
         display gate.prompt
         wait for input
         if input is "y" or "yes":
+            continue
+        else if input is "skip" and gate.type == "confirm_skip":
             continue
         else if input is "n" or "no":
             ask for feedback
             re-invoke current stage with feedback
             restart gates for this stage
+    if gate.type == "auto":
+        continue
 ```
 
 ---
@@ -284,7 +324,7 @@ The implement stage does not use a single skill. Instead, the orchestrator reads
 
 Before entering the implement stage, verify:
 1. `plan.json` exists at `.aide/output/2-plan/plan.json`
-2. Superpowers skills are available at `.claude/aide/skills/`
+2. Superpowers skills are available (bundled with AIDE in `skills/`, auto-discovered via plugin system)
 3. All previous stages' gates have passed
 
 ### Step 3.1: Load plan.json
@@ -322,7 +362,13 @@ A task whose dependency has been marked blocked (status = `blocked`) remains wai
 
 ### Step 3.3: Dispatch Per-Task Subagent Loop
 
-For each task in the ready queue, dispatch through Superpowers' subagent-driven-development pattern:
+**Concurrency limit**: Max 3 subagents may run in parallel. Dispatch up to 3 ready tasks simultaneously, wait for all to complete before dispatching the next batch. This balances throughput against context coherence.
+
+Process the ready queue in parallel batches of up to 3 tasks:
+
+1. **Select batch**: Take up to 3 tasks from the ready queue.
+2. **Dispatch in parallel**: For each task in the batch, use the Agent tool (run_in_background: true) to dispatch through Superpowers' subagent-driven-development pattern. Pass the constructed implementer prompt as the `prompt` parameter. Include the task ID (e.g., `[T001]`) at the beginning of the prompt so subagent progress is traceable.
+3. **Wait for batch**: All subagents in the batch must complete before evaluating results.
 
 1. **Load Superpowers**: Use the Skill tool to invoke `superpowers:subagent-driven-development`. Pass the constructed implementer prompt as the `args` parameter. Include the task ID (e.g., `[T001]`) at the beginning of the args string so subagent progress is traceable.
 
@@ -376,7 +422,7 @@ Present the implement stage summary:
   ✗ T002 — <title> (blocked: <reason>)
   ✓ T003 — <title> (<commit>)
 
-  N/M tasks completed, K blocked.
+  N/M tasks completed in B batches, K blocked.
   Changed: <file list>
 
   To fix blocked tasks, update plan.json and run /aide --continue
@@ -414,21 +460,6 @@ Auto-stashed changes: run `git stash list` to review.
 ```
 
 If aborted early, show what was completed and note: "Resume on branch `aide/<slug>` with `/aide --continue`."
-
----
-
-## Phase 1 Scope
-
-Phase 1 implements the minimal viable pipeline:
-
-- **Only the spec stage is active**. Plan, implement, and test stages are defined for forward compatibility but their skills may not exist yet.
-- **Only the `confirm` gate type is implemented**. Unknown gate types are treated as `confirm` with a warning.
-- **State persistence is not yet implemented**. The pipeline always starts from the spec stage.
-- **Config defaults are hardcoded** (shown in the Startup Sequence section above).
-
-The orchestrator must gracefully handle missing stage skills by reporting the stage as unavailable and skipping it.
-
----
 
 ## Important Guidelines
 
