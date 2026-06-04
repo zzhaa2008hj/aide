@@ -33,10 +33,10 @@ AIDE will:
 ### Resume an interrupted pipeline
 
 ```bash
-/aide --continue
+/aide-continue
 ```
 
-State is persisted in `.aide/state.json`. Completed stages are skipped automatically. Requires you to be on the original `aide/*` branch.
+Validates branch, reads `.aide/state.json` to find where you left off, skips completed stages, and resumes execution.
 
 ### Updating AIDE
 

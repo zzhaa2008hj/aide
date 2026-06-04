@@ -60,22 +60,13 @@ At the start, grant yourself maximum permissions to avoid repeated confirmations
 
 Batch independent operations together. When invoking a stage skill, pass the complete context so it can work autonomously without follow-up questions.
 
-### Step 1: Branch Preparation (new pipeline) or Branch Validation (--continue)
+### Step 1: Branch Preparation
 
-**If the user passed `--continue`:**
+> **Note**: If the user wants to resume an interrupted pipeline, they should use `/aide-continue` instead of `/aide`. That skill handles branch validation and state reading, then invokes the orchestrator.
 
-1. Get the current branch name:
-   ```bash
-   git branch --show-current
-   ```
-2. If the current branch does NOT start with `aide/`:
-   - Report: "`--continue` requires you to be on an `aide/*` branch. Current branch: `<name>`. Please switch to the correct branch and try again."
-   - Abort.
-3. If the current branch IS an `aide/*` branch:
-   - Report: "Resuming pipeline on branch `<current-branch>`."
-   - Skip the rest of Step 1 and proceed to Step 2.
+**If invoked via `aide-continue`**: The `--continue` argument will be passed. Skip branch creation — the branch already exists. Proceed directly to Step 2.
 
-**If this is a new pipeline (no `--continue`):**
+**If this is a new pipeline:**
 
 1. **Generate a slug** from the user's requirement description. Follow these rules:
    - Extract 3-5 core keywords, convert to lowercase, join with `-`
@@ -189,15 +180,9 @@ Each gate entry has `name`, `type`, and `prompt` as top-level keys. Unknown gate
 
 ### Step 5: Determine starting stage
 
-If the user passed `--continue`, read `.aide/state.json` to determine where to resume:
+**If invoked via `aide-continue`**: The `--continue from <stage>` argument specifies the starting stage. Read `.aide/state.json` for `completed_stages` — these stages will be skipped in the stage loop.
 
-```bash
-cat .aide/state.json 2>/dev/null || echo '{"current_stage": "spec"}'
-```
-
-Parse `current_stage` — this is the stage that was in progress when the pipeline was interrupted. Resume from this stage. Already-completed stages (listed in `completed_stages`) are skipped.
-
-If `--continue` was NOT passed (new pipeline), start from `spec` and initialize state.json:
+**If this is a new pipeline**: Start from `spec`. Initialize state.json:
 
 ```json
 {"pipeline": "<slug>", "current_stage": "spec", "completed_stages": [], "last_updated": "<timestamp>"}
@@ -219,7 +204,7 @@ For each enabled stage in order (spec → plan → implement → test), execute 
 
 ### 0. Check resume state
 
-If `--continue` was passed, check `.aide/state.json`. If the current stage is in `completed_stages`, skip it and move to the next. Report: "Skipping <stage> (already completed)."
+If invoked via `aide-continue`, check `.aide/state.json`. If the current stage is in `completed_stages`, skip it and move to the next. Report: "Skipping <stage> (already completed)."
 
 ### 1. Display Progress
 
@@ -291,7 +276,7 @@ After a stage completes successfully, run its configured gates. The gate configu
    - Log a warning: `"Unknown gate type '<type>', treating as 'confirm'"`
    - Proceed as if type is `confirm`.
 
-4. **Handle user interruption**: If the user provides feedback that is not a simple y/n response, treat it as an interruption. Capture their input, and after they confirm they are done, present the options again. If they mention wanting to stop, respond: "You can resume later by running `/aide --continue`."
+4. **Handle user interruption**: If the user provides feedback that is not a simple y/n response, treat it as an interruption. Capture their input, and after they confirm they are done, present the options again. If they mention wanting to stop, respond: "You can resume later by running `/aide-continue`."
 
 ### Gate Resolution Algorithm (Reference)
 
@@ -469,7 +454,7 @@ Present the implement stage summary:
   N/M tasks completed in B batches, K blocked.
   Changed: <file list>
 
-  To fix blocked tasks, update plan.json and run /aide --continue
+  To fix blocked tasks, update plan.json and run /aide-continue
 ```
 
 Then proceed to the gate checkpoint for `after_implement` (default: `auto`).
@@ -591,7 +576,7 @@ If a stash was created in Step 0, append:
 Auto-stashed changes: run `git stash list` to review.
 ```
 
-If aborted early, show what was completed and note: "Resume on branch `aide/<slug>` with `/aide --continue`."
+If aborted early, show what was completed and note: "Resume on branch `aide/<slug>` with `/aide-continue`."
 
 ## Important Guidelines
 
@@ -601,4 +586,4 @@ If aborted early, show what was completed and note: "Resume on branch `aide/<slu
 - Use absolute paths when executing bash commands (e.g., `mkdir -p .aide/output/1-spec/` — relative paths are fine since the business project root is the cwd).
 - The AIDE installation directory is typically under `~/.claude/plugins/cache/aide/` (installed via `claude plugin install`) or `.claude/plugins/aide/` (manual). Use this path to reference `aide-core/` files, schemas, and sub-skills.
 - Maintain a professional, concise tone. Report what is happening at each step.
-- If the user interrupts mid-pipeline (e.g., with unrelated questions), acknowledge the interruption and offer to resume with `/aide --continue`.
+- If the user interrupts mid-pipeline (e.g., with unrelated questions), acknowledge the interruption and offer to resume with `/aide-continue`.
