@@ -42,11 +42,15 @@ Phase 3 adds the final pipeline stage: test verification. A new `aide-test` skil
 
 **`fail`** — Auto-revert to implement stage for fixing:
 1. If `test_retries < 3`: increment retry count in state.json, feed failure details back to implement stage (re-dispatch failing tasks), re-run test stage
-2. If `test_retries >= 3`: override gate to `confirm`. Show failure details and prompt: "Test stage has failed 3 times. Fix manually or accept and proceed? (y/n)"
+2. If `test_retries >= 3`: override gate to `confirm`. Show failure details and prompt: "Test stage failed 3 times. Accept and proceed? (y/n)"
+   - `y` → Accept. User handles remaining issues manually. Commit, pipeline exits.
+   - `n` → Reset `test_retries` to 0, feed failure details back to implement stage, re-run test stage. After next 3 retries, ask again.
 
-**`manual`** — Auto-revert to implement stage for test setup:
-1. If `test_retries < 3`: increment retry count, feed "test framework not detected" back to implement stage to add test setup, re-run test stage
-2. If `test_retries >= 3`: override gate to `confirm`. Prompt: "Test framework still not detected after 3 attempts. Verify manually? (y/n)"
+**`manual`** — Same retry logic as `fail`:
+1. If `test_retries < 3`: increment retry count, feed "test framework not detected" back to implement stage, re-run test stage
+2. If `test_retries >= 3`: override gate to `confirm`. Prompt: "Test framework still not detected after 3 attempts. Accept and proceed? (y/n)"
+   - `y` → Accept. Pipeline exits with `verdict: manual`.
+   - `n` → Reset `test_retries` to 0, feed back to implement, retry another 3 rounds.
 
 ### Test Command Detection
 
