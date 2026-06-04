@@ -36,16 +36,17 @@ Phase 3 adds the final pipeline stage: test verification. A new `aide-test` skil
 
 ### Post-Verdict Flow
 
-After the test report is written, the `after_test` gate runs. Gate behavior depends on verdict:
+**Max retry limit**: 3 iterations. The orchestrator tracks retries in state.json (`test_retries`). Behavior depends on verdict:
 
-**`pass`** — Gate opens as normal (`confirm` / `confirm_skip` / `auto`). User sees the test report summary and confirms. On gate pass: commit, update state.json to `complete`, pipeline exits.
+**`pass`** — No confirmation. Gate is forced `auto`, pipeline exits cleanly. Commit and mark state.json `complete`.
 
-**`fail`** — Gate opens with additional context: the specific failures are displayed before the gate prompt. User chooses:
-- `y` — Accept the failures and proceed (pipeline completes, failures noted in commit)
-- `n` — Reject. User provides feedback, orchestrator feeds it back to the implement stage to fix failing areas, then re-runs the test stage
-- `skip` (if `confirm_skip`) — Accept and proceed, same as `y`
+**`fail`** — Auto-revert to implement stage for fixing:
+1. If `test_retries < 3`: increment retry count in state.json, feed failure details back to implement stage (re-dispatch failing tasks), re-run test stage
+2. If `test_retries >= 3`: override gate to `confirm`. Show failure details and prompt: "Test stage has failed 3 times. Fix manually or accept and proceed? (y/n)"
 
-**`manual`** — Gate MUST be `confirm` (override `confirm_skip` or `auto`). User MUST manually verify since automated checks couldn't run. On gate pass: commit with `verdict: manual`, pipeline completes.
+**`manual`** — Auto-revert to implement stage for test setup:
+1. If `test_retries < 3`: increment retry count, feed "test framework not detected" back to implement stage to add test setup, re-run test stage
+2. If `test_retries >= 3`: override gate to `confirm`. Prompt: "Test framework still not detected after 3 attempts. Verify manually? (y/n)"
 
 ### Test Command Detection
 
@@ -128,9 +129,11 @@ test:
   enabled: true
   gates:
     - name: after_test
-      type: confirm_skip
-      prompt: "Test report ready. Verification passed? (y/n/skip)"
+      type: auto
+      prompt: "Test verification complete."
 ```
+
+Pass verdicts auto-complete. The gate only shows to the user when `test_retries >= 3` (forced to `confirm`).
 
 ## Pipeline Completion
 
