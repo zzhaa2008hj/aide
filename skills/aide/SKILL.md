@@ -18,7 +18,7 @@ To minimize interruptions during pipeline execution, request these permissions u
 - **Bash**: Run commands, manage git, install dependencies, run tests
 - **Write/Edit**: Create and modify all project files
 - **Read**: Read any file in the project
-- **Skill**: Invoke stage skills (aide-spec, aide-plan, aide-test, subagent-driven-development, etc.)
+- **Skill**: Invoke stage skills (aide-spec, aide-plan, subagent-driven-development, etc.)
 - **TaskCreate/TaskUpdate**: Track progress within stages
 
 When invoking stage skills, pass the full context so the stage can work autonomously. Batch independent operations to reduce round-trips.
@@ -36,9 +36,9 @@ When invoking stage skills, pass the full context so the stage can work autonomo
 | 1     | spec      | `aide-spec` skill               | Requirements → Specification        |
 | 2     | plan      | `aide-plan` skill               | Specification → Task plan           |
 | 3     | implement | Orchestrator + Superpowers      | Tasks → Code (subagent per task)    |
-| 4     | test      | `aide-test` skill               | Verification → Test report          |
+| 4     | test      | `aide-test` skill (Phase 3)     | Verification → Test report          |
 
-The implement stage has no standalone skill. The orchestrator loads Superpowers' `subagent-driven-development` skill and dispatches each task in `plan.json` through implement → spec review → code quality review cycles.
+The implement stage has no standalone skill. The orchestrator loads Superpowers' `subagent-driven-development` skill and dispatches each task in `plan.json` through implement → spec review → code quality review cycles. The test stage (`aide-test` skill) is planned for Phase 3 — it is not yet implemented.
 
 All four pipeline stages are available: spec → plan → implement → test.
 
@@ -207,12 +207,12 @@ Announce which stage is starting. Use a clear header like:
 
 ### 2. Load the Stage Skill
 
-Load the stage skill by its name. The skill files are at:
-- `.claude/aide/skills/aide-spec/SKILL.md` (spec stage)
-- `.claude/aide/skills/aide-plan/SKILL.md` (plan stage)
-- `.claude/aide/skills/aide-test/SKILL.md` (test stage)
+Load the stage skill by its name using the Skill tool. Available stage skills:
+- `aide-spec` — spec stage
+- `aide-plan` — plan stage
+- `aide-test` — test stage (Phase 3)
 
-Use the Skill tool to invoke the skill, passing the user's original request (plus any gate feedback) as the argument.
+Pass the user's original request (plus any gate feedback) as the argument.
 
 **Exception — implement stage**: There is no `aide-implement` skill. When the implement stage is reached, follow the dedicated "Stage 3: Implement" section below instead of this generic stage execution flow.
 

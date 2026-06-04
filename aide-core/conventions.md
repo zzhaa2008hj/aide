@@ -31,9 +31,9 @@ All AIDE workflow artifacts live under `.aide/` in the business project root. Th
 | 1     | spec      | Requirements → Specification        | `aide-spec` skill                 |
 | 2     | plan      | Specification → Task plan           | `aide-plan` skill                 |
 | 3     | implement | Tasks → Code (subagent per task)    | Orchestrator + Superpowers        |
-| 4     | test      | Verification → Test report          | `aide-test` skill                 |
+| 4     | test      | Verification → Test report          | `aide-test` skill (Phase 3)       |
 
-The implement stage does not have a standalone skill. The orchestrator reads `plan.json` tasks, resolves dependencies via topological sort, and dispatches each task through Superpowers' `subagent-driven-development` pattern (implement → spec review → code quality review).
+The implement stage does not have a standalone skill. The orchestrator reads `plan.json` tasks, resolves dependencies via topological sort, and dispatches each task through Superpowers' `subagent-driven-development` pattern (implement → spec review → code quality review). The test stage is planned for Phase 3 — the `aide-test` skill does not yet exist.
 
 ## File Naming
 
@@ -41,9 +41,9 @@ The implement stage does not have a standalone skill. The orchestrator reads `pl
 - Human-readable artifact: `{stage-name}.md`
 - Machine-readable artifact: `{stage-name}.json`
 
-Every stage MUST produce both `.md` and `.json` outputs. The `.json` output must conform to the corresponding schema in `aide-core/schemas/`.
+Each stage SHOULD produce both `.md` and `.json` outputs. The `.json` output must conform to the corresponding schema in `aide-core/schemas/`.
 
-**Exception**: The implement stage (3-implement) only produces `implement.json`. Its primary output is code changes, so a human-readable summary is presented inline by the orchestrator rather than written to a separate `.md` file.
+**Exception**: The implement stage (3-implement) only produces `implement.json` — its primary output is code changes, with a human-readable summary presented inline by the orchestrator.
 
 ## Git
 
