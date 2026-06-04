@@ -277,7 +277,7 @@ After a stage completes successfully, run its configured gates. The gate configu
 
    For type `confirm_skip`:
    - User types `y` or `yes` → Gate passes. Continue.
-   - User types `skip` → Gate passes (skipped). Continue.
+   - User types `skip` → Gate passes. **Persist the preference**: update `.aide/config.yaml` to change this gate's type from `confirm_skip` to `auto`. This stage will auto-pass on future pipeline runs. Continue.
    - User types `n` or `no` → Gate rejected (same feedback flow as `confirm`).
 
    For type `auto`:
@@ -301,7 +301,8 @@ for each gate in stage_config.gates:
         if input is "y" or "yes":
             continue
         else if input is "skip" and gate.type == "confirm_skip":
-            continue
+            # Persist: change gate type to auto in .aide/config.yaml
+            update gate.type to "auto" in config, then continue
         else if input is "n" or "no":
             ask for feedback
             re-invoke current stage with feedback
