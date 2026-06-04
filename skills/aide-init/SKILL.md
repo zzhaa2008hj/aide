@@ -17,8 +17,7 @@ You bootstrap AIDE configuration in a business project. Your job is to locate th
 Find the AIDE plugin installation directory. Search in order:
 
 ```bash
-AIDE_DIR=$(find ~/.claude/plugins/cache/aide -name "SKILL.md" -path "*/skills/aide/*" 2>/dev/null | head -1 | sed 's|/skills/aide/SKILL.md||')
-[ -z "$AIDE_DIR" ] && AIDE_DIR=".claude/plugins/aide"
+AIDE_DIR=$(find ~/.claude/plugins/cache/aide .claude/plugins -name "SKILL.md" -path "*/skills/aide/*" 2>/dev/null | head -1 | sed 's|/skills/aide/SKILL.md||')
 [ -z "$AIDE_DIR" ] && AIDE_DIR=".claude/aide"
 ```
 

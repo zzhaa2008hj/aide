@@ -57,7 +57,7 @@ fi
 echo "Version bumped: $OLD_VERSION → $NEW_VERSION  (branch: $BRANCH, mode: $MODE)"
 echo ""
 echo "Next steps:"
-echo "  git add .claude-plugin/marketplace.json"
+echo "  git add .claude-plugin/"
 echo "  git commit -m 'chore: bump version to $NEW_VERSION'"
 echo "  git tag aide--v$NEW_VERSION"
 echo "  git push"

@@ -160,8 +160,11 @@ stages:
         type: confirm_skip
         prompt: "Review the plan at .aide/output/2-plan/plan.md. Does this look right? (y/n/skip)"
   implement:
-    enabled: false
-    gates: []
+    enabled: true
+    gates:
+      - name: after_implement
+        type: auto
+        prompt: "Code changes complete. Review the summary above."
   test:
     enabled: false
     gates: []
@@ -175,7 +178,7 @@ stages:
     enabled: <bool>
     gates:
       - name: <gate_name>       # e.g., "after_spec"
-        type: <gate_type>       # "confirm" (Phase 1), "confirm_skip" (Phase 2), "auto" (Phase 3)
+        type: <gate_type>       # "confirm", "confirm_skip", or "auto"
         prompt: "<prompt text>"
 ```
 
@@ -183,7 +186,7 @@ Each gate entry has `name`, `type`, and `prompt` as top-level keys. Unknown gate
 
 ### Step 5: Determine starting stage
 
-In Phase 1, always start from the `spec` stage. For future phases, check `.aide/state.json` if it exists to determine where to resume.
+Start from the `spec` stage by default. If `.aide/state.json` exists, read it to determine where to resume (future: state persistence for `--continue` across sessions).
 
 ### Step 6: Announce the plan
 
