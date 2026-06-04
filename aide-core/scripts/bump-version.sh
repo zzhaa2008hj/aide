@@ -27,12 +27,22 @@ esac
 
 python3 -c "
 import json
+
+# Update marketplace.json
 with open('.claude-plugin/marketplace.json') as f:
     d = json.load(f)
 d['metadata']['version'] = '$NEW_VERSION'
 d['plugins'][0]['version'] = '$NEW_VERSION'
 with open('.claude-plugin/marketplace.json', 'w') as f:
     json.dump(d, f, indent=2)
+    f.write('\n')
+
+# Update plugin.json (Claude Code reads this for version comparison)
+with open('.claude-plugin/plugin.json') as f:
+    p = json.load(f)
+p['version'] = '$NEW_VERSION'
+with open('.claude-plugin/plugin.json', 'w') as f:
+    json.dump(p, f, indent=2)
     f.write('\n')
 "
 
