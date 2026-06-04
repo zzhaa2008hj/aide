@@ -57,9 +57,26 @@ Create both output files based on your analysis.
 
 ## Output
 
-You produce two files in the `.aide/output/1-spec/` directory:
+You produce two files in the `.aide/output/1-spec/` directory.
 
-### 1. `spec.md` — Human-Readable Specification
+### Step 0: Determine output filename
+
+Read the slug from `.aide/state.json` and construct the base filename:
+
+```bash
+SLUG=$(python3 -c "import json; print(json.load(open('.aide/state.json'))['slug'])")
+DATE=$(date +%Y-%m-%d)
+BASE=".aide/output/1-spec/${DATE}-${SLUG}-spec"
+N=1
+while [ -f "${BASE}.md" ] || [ -f "${BASE}.json" ]; do
+    N=$((N + 1))
+    BASE=".aide/output/1-spec/${DATE}-${SLUG}-spec-${N}"
+done
+```
+
+Use `$BASE.md` and `$BASE.json` as the output paths throughout this stage.
+
+### 1. `{base}.md` — Human-Readable Specification
 
 Structure the document with these sections:
 
@@ -93,7 +110,7 @@ Two subsections:
 - **In Scope**: What this specification covers
 - **Out of Scope**: What is explicitly not covered (prevents scope creep)
 
-### 2. `spec.json` — Machine-Readable Specification
+### 2. `{base}.json` — Machine-Readable Specification
 
 This file must conform to the schema at `aide-core/schemas/spec.schema.json`.
 
@@ -146,11 +163,11 @@ mkdir -p .aide/output/1-spec/
 
 ## Validation
 
-Before reporting completion, **validate** `spec.json` against the schema:
+Before reporting completion, **validate** the JSON output against the schema:
 
 1. Locate the AIDE installation directory. Check `~/.claude/plugins/cache/aide/aide/*/` first, then `.claude/plugins/aide/`. The schema is at `<aide-dir>/aide-core/schemas/spec.schema.json`.
 2. Ensure the `jsonschema` Python package is available (`pip install jsonschema` if needed).
-3. Run validation:
+3. Run validation using `$BASE.json` (determined in Step 0):
 
 ```bash
 AIDE_DIR=$(find ~/.claude/plugins/cache/aide .claude/plugins -name "SKILL.md" -path "*/skills/aide/*" 2>/dev/null | head -1 | sed 's|/skills/aide/SKILL.md||')
@@ -159,7 +176,7 @@ python3 -c "
 import json, jsonschema, sys
 with open('${AIDE_DIR}/aide-core/schemas/spec.schema.json') as f:
     schema = json.load(f)
-with open('.aide/output/1-spec/spec.json') as f:
+with open('${BASE}.json') as f:
     data = json.load(f)
 jsonschema.validate(data, schema)
 print('Validation passed')

@@ -185,7 +185,7 @@ Each gate entry has `name`, `type`, and `prompt` as top-level keys. Unknown gate
 **If this is a new pipeline**: Start from `spec`. Initialize state.json:
 
 ```json
-{"pipeline": "<slug>", "current_stage": "spec", "completed_stages": [], "last_updated": "<timestamp>"}
+{"pipeline": "<slug>", "slug": "<slug>", "current_stage": "spec", "completed_stages": [], "last_updated": "<timestamp>"}
 ```
 
 Write to `.aide/state.json`.
@@ -227,11 +227,14 @@ Pass the user's original request (plus any gate feedback) as the argument.
 
 ### 3. Verify Stage Output
 
-After the stage skill reports completion, verify that the expected output files exist:
+After the stage skill reports completion, verify that the expected output files exist. Files follow the naming convention `{date}-{slug}-{stage}.{ext}` where `date` is `YYYY-MM-DD` and `slug` comes from `state.json`:
 
-- `spec` stage: `.aide/output/1-spec/spec.md` and `.aide/output/1-spec/spec.json`
-- `plan` stage: `.aide/output/2-plan/plan.md` and `.aide/output/2-plan/plan.json`
-- `test` stage: `.aide/output/4-test/test-report.md` and `.aide/output/4-test/test-report.json`
+- `spec` stage: `.aide/output/1-spec/<date>-<slug>-spec.md` and `-spec.json`
+- `plan` stage: `.aide/output/2-plan/<date>-<slug>-plan.md` and `-plan.json`
+- `implement` stage: `.aide/output/3-implement/<date>-<slug>-implement.json`
+- `test` stage: `.aide/output/4-test/<date>-<slug>-test-report.md` and `-test-report.json`
+
+Use `ls .aide/output/<stage-dir>/` to find the actual file names — they may have `-2`, `-3` suffixes if re-runs occurred.
 
 If output files are missing or validation was not performed, instruct the user and request they re-run the stage.
 

@@ -4,6 +4,26 @@
 
 All AIDE workflow artifacts live under `.aide/` in the business project root. This directory should be added to `.gitignore` in the business project (AIDE's auto-commit explicitly stages `.aide/` files, so `.gitignore` does not block them).
 
+## File Naming
+
+Stage output files use the format: `{date}-{slug}-{stage}.{ext}`
+
+- `date`: `YYYY-MM-DD` of pipeline run
+- `slug`: kebab-case feature identifier (e.g., `user-login-oauth`)
+- `stage`: stage name (`spec`, `plan`, `implement`, `test-report`)
+- `ext`: `md` or `json`
+
+Before writing, check for existing files. If a file with the same name exists, append `-2`, `-3`, etc. Same-pipeline re-runs (gate feedback loops, test retries) increment the sequence.
+
+Example:
+```
+.aide/output/1-spec/
+  2026-06-04-user-login-spec.md
+  2026-06-04-user-login-spec.json
+  2026-06-04-user-login-spec-2.md     # re-run after gate rejection
+  2026-06-04-user-login-spec-2.json
+```
+
 ## Output Structure
 
 ```
@@ -12,16 +32,16 @@ All AIDE workflow artifacts live under `.aide/` in the business project root. Th
 ├── state.json           # Pipeline state tracking (for --continue resume)
 └── output/
     ├── 1-spec/
-    │   ├── spec.md      # Human-readable specification
-    │   └── spec.json    # Machine-readable specification (conforms to spec.schema.json)
+    │   ├── {date}-{slug}-spec.md
+    │   └── {date}-{slug}-spec.json
     ├── 2-plan/
-    │   ├── plan.md
-    │   └── plan.json
+    │   ├── {date}-{slug}-plan.md
+    │   └── {date}-{slug}-plan.json
     ├── 3-implement/
-    │   └── implement.json
+    │   └── {date}-{slug}-implement.json
     └── 4-test/
-        ├── test-report.md
-        └── test-report.json
+        ├── {date}-{slug}-test-report.md
+        └── {date}-{slug}-test-report.json
 ```
 
 ## Stage Order

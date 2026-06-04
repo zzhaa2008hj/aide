@@ -12,16 +12,38 @@ You are the **test stage** of the AIDE pipeline. Your job is to verify that the 
 
 ## Input
 
-- `.aide/output/1-spec/spec.json` — features with `acceptance_criteria`
-- `.aide/output/2-plan/plan.json` — tasks with `files_to_touch`
-- `.aide/output/3-implement/implement.json` — `completed_tasks`, `changed_files`, `task_results`
+Find the latest files from previous stages:
+
+```bash
+SPEC=$(ls -t .aide/output/1-spec/*-spec.json 2>/dev/null | head -1)
+PLAN=$(ls -t .aide/output/2-plan/*-plan.json 2>/dev/null | head -1)
+IMPL=$(ls -t .aide/output/3-implement/*-implement.json 2>/dev/null | head -1)
+```
+
+- `$SPEC` — features with `acceptance_criteria`
+- `$PLAN` — tasks with `files_to_touch`
+- `$IMPL` — `completed_tasks`, `changed_files`, `task_results`
 
 Only verify features for which tasks are in `completed_tasks`. Skip features whose tasks were all blocked.
 
 ## Output
 
-- `.aide/output/4-test/test-report.json` — conforms to `test.schema.json`
-- `.aide/output/4-test/test-report.md` — human-readable summary
+### Step 0: Determine output filename
+
+Read the slug from `.aide/state.json`:
+
+```bash
+SLUG=$(python3 -c "import json; print(json.load(open('.aide/state.json'))['slug'])")
+DATE=$(date +%Y-%m-%d)
+BASE=".aide/output/4-test/${DATE}-${SLUG}-test-report"
+N=1
+while [ -f "${BASE}.md" ] || [ -f "${BASE}.json" ]; do
+    N=$((N + 1))
+    BASE=".aide/output/4-test/${DATE}-${SLUG}-test-report-${N}"
+done
+```
+
+Use `$BASE.md` and `$BASE.json` as the output paths.
 
 ## Workflow
 
@@ -29,9 +51,9 @@ Only verify features for which tasks are in `completed_tasks`. Skip features who
 
 ```bash
 mkdir -p .aide/output/4-test
-cat .aide/output/1-spec/spec.json
-cat .aide/output/2-plan/plan.json
-cat .aide/output/3-implement/implement.json
+cat "$SPEC"
+cat "$PLAN"
+cat "$IMPL"
 ```
 
 Parse all three. If implement.json has no `completed_tasks`, report `verdict: manual` with reason "No completed tasks to verify" and skip to Step 6.
@@ -105,7 +127,7 @@ Apply the verdict rules:
 
 ### Step 6: Write output
 
-Write `test-report.json` conforming to `test.schema.json`:
+Write `$BASE.json` conforming to `test.schema.json`:
 
 ```json
 {
@@ -141,14 +163,14 @@ python3 -c "
 import json, jsonschema
 with open('${AIDE_DIR}/aide-core/schemas/test.schema.json') as f:
     schema = json.load(f)
-with open('.aide/output/4-test/test-report.json') as f:
+with open('${BASE}.json') as f:
     data = json.load(f)
 jsonschema.validate(data, schema)
 print('test-report.json is valid')
 "
 ```
 
-Write `test-report.md` — human-readable summary with test results table, spec verification status, coverage report, and verdict.
+Write `$BASE.md` — human-readable summary with test results table, spec verification status, coverage report, and verdict.
 
 ### Step 7: Report
 

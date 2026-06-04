@@ -8,18 +8,39 @@ description: >-
 
 # AIDE Plan Stage
 
-You are the **plan stage** of the AIDE pipeline. Your job is to read the structured specification from the spec stage and produce a detailed implementation plan: `plan.json` (machine-readable) and `plan.md` (human summary).
+You are the **plan stage** of the AIDE pipeline. Your job is to read the structured specification from the spec stage and produce a detailed implementation plan.
 
 ## Input
 
-Read `.aide/output/1-spec/spec.json`. It contains:
+Find the latest spec.json from the spec stage:
+
+```bash
+ls -t .aide/output/1-spec/*-spec.json 2>/dev/null | head -1
+```
+
+Read this file. It contains:
 - `features`: array of objects, each with `id` (e.g., "F001"), `title`, `description`, `acceptance_criteria` (array of strings)
+
+If no spec.json is found, report the error and stop.
 
 ## Output
 
-Write two files:
-1. `.aide/output/2-plan/plan.json` — conforms to `plan.schema.json`
-2. `.aide/output/2-plan/plan.md` — human-readable summary
+### Step 0: Determine output filename
+
+Read the slug from `.aide/state.json` and construct the base filename:
+
+```bash
+SLUG=$(python3 -c "import json; print(json.load(open('.aide/state.json'))['slug'])")
+DATE=$(date +%Y-%m-%d)
+BASE=".aide/output/2-plan/${DATE}-${SLUG}-plan"
+N=1
+while [ -f "${BASE}.md" ] || [ -f "${BASE}.json" ]; do
+    N=$((N + 1))
+    BASE=".aide/output/2-plan/${DATE}-${SLUG}-plan-${N}"
+done
+```
+
+Use `$BASE.md` and `$BASE.json` as the output paths throughout this stage.
 
 ## Task Decomposition Rules
 
@@ -100,7 +121,7 @@ Construct the JSON according to plan.schema.json:
 }
 ```
 
-Write to `.aide/output/2-plan/plan.json`.
+Write to `$BASE.json`.
 
 ### Step 6: Write plan.md
 
@@ -129,7 +150,7 @@ Human-readable summary:
 3. T003, T005 (after T001, T004)
 ```
 
-Write to `.aide/output/2-plan/plan.md`.
+Write to `$BASE.md`.
 
 ### Step 7: Validate
 
@@ -141,7 +162,7 @@ python3 -c "
 import json, jsonschema
 with open('${AIDE_DIR}/aide-core/schemas/plan.schema.json') as f:
     schema = json.load(f)
-with open('.aide/output/2-plan/plan.json') as f:
+with open('${BASE}.json') as f:
     data = json.load(f)
 jsonschema.validate(data, schema)
 print('plan.json is valid')
