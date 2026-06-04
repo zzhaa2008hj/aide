@@ -9,7 +9,7 @@ All AIDE workflow artifacts live under `.aide/` in the business project root. Th
 ```
 .aide/
 ├── config.yaml          # Project workflow configuration (copied from template)
-├── state.json           # Pipeline state tracking (Phase 2+)
+├── state.json           # Pipeline state tracking (for --continue resume)
 └── output/
     ├── 1-spec/
     │   ├── spec.md      # Human-readable specification

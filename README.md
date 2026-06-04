@@ -23,9 +23,20 @@ Optional: run `/aide-init` to explicitly bootstrap `.aide/` and the config templ
 ```
 
 AIDE will:
-1. Generate a structured spec (`.aide/output/1-spec/`)
-2. Pause for your review
-3. On confirm, commit the spec and proceed to planning
+1. Create an `aide/<slug>` branch and stash uncommitted changes
+2. Generate a structured spec (`.aide/output/1-spec/`)
+3. Pause for your review (gate: confirm / confirm_skip / auto)
+4. On confirm, commit and proceed to plan → implement stages
+5. Plan stage decomposes the spec into dependency-tracked tasks
+6. Implement stage dispatches tasks to subagents with review gates
+
+### Resume an interrupted pipeline
+
+```bash
+/aide --continue
+```
+
+State is persisted in `.aide/state.json`. Completed stages are skipped automatically. Requires you to be on the original `aide/*` branch.
 
 ### Updating AIDE
 
@@ -35,7 +46,7 @@ When AIDE releases new features or fixes:
 /aide-update
 ```
 
-This updates AIDE via `claude plugin update aide` and re-runs bootstrap init to sync configuration. Safe to run mid-pipeline — won't affect your current `aide/*` branch.
+This runs `claude plugin marketplace update aide` then `claude plugin update aide@aide --scope project`. Safe to run mid-pipeline.
 
 ### Customize gates
 
@@ -45,16 +56,27 @@ Edit `.aide/config.yaml` to change gate types per stage:
 - `confirm_skip` — can be skipped (y/n/skip)
 - `auto` — no pause
 
+## Pipeline
+
+| Order | Stage     | Skill          | Description                         |
+|-------|-----------|----------------|-------------------------------------|
+| 1     | spec      | `aide-spec`    | Requirements → Specification        |
+| 2     | plan      | `aide-plan`    | Specification → Task plan           |
+| 3     | implement | Orchestrator   | Tasks → Code (subagent per task)    |
+| 4     | test      | `aide-test`    | Verification → Test report (Phase 3) |
+
+The implement stage has no standalone skill. The orchestrator reads `plan.json`, resolves task dependencies via topological sort, and dispatches each task as a subagent with spec compliance + code quality reviews. Up to 3 independent tasks run in parallel.
+
 ## Project Structure
 
 ```
 AIDE/
 ├── skills/
 │   ├── aide/                          # Pipeline orchestrator
+│   ├── aide-init/                     # Bootstrap .aide/ and CLAUDE.md
 │   ├── aide-update/                   # Update AIDE installation
 │   ├── aide-spec/                     # Stage 1: Requirements → Spec
-│   ├── aide-plan/                     # Stage 2: Spec → Plan (Phase 2)
-│   ├── aide-test/                     # Stage 4: Verification (Phase 3)
+│   ├── aide-plan/                     # Stage 2: Spec → Plan
 │   ├── brainstorming/                 # Idea → design (superpowers)
 │   ├── dispatching-parallel-agents/   # Parallel task dispatch (superpowers)
 │   ├── executing-plans/               # Plan execution (superpowers)
@@ -74,31 +96,50 @@ AIDE/
 │   ├── gate.md            # Gate engine specification
 │   ├── conventions.md     # Directory, naming, branch, and git conventions
 │   └── scripts/
-│       └── sync-superpowers.sh  # Upstream sync tool (maintainer use)
+│       ├── bump-version.sh        # Version bump (pre-commit auto-trigger)
+│       ├── install-hooks.sh       # Git hook deployment
+│       └── sync-superpowers.sh    # Upstream sync tool (maintainer)
+├── hooks/                 # Git hooks
+│   ├── pre-commit         # Auto-bump version on functional changes
+│   └── pre-push           # Enforce version bump before push
+├── .claude-plugin/        # Plugin manifest
+│   ├── plugin.json        # Plugin identity + version
+│   └── marketplace.json   # Self-hosted marketplace definition
 ├── templates/             # Business project templates
 │   ├── aide.config.yaml
 │   └── CLAUDE.md.partial
-├── SUPERSPOWERS_VERSION   # Tracked upstream baseline commit
 ├── docs/                  # Design specs and implementation plans
+└── SUPERSPOWERS_VERSION   # Tracked upstream baseline commit
 ```
 
-**Note**: There is no `aide-implement` skill. Stage 3 (implement) is driven by the orchestrator using Superpowers' `subagent-driven-development` — each task in `plan.json` is dispatched to a fresh subagent with spec compliance and code quality review.
+## Version Management
+
+AIDE versions follow semver with automatic enforcement via git hooks:
+
+| Change type | Version | Trigger |
+|-------------|---------|---------|
+| Same branch fix | patch `x.y.Z` | `bump-version.sh` (auto via pre-commit) |
+| New feature branch | minor `x.Y.z` | `bump-version.sh` (auto via pre-commit) |
+| Breaking change | major `X.y.z` | `bump-version.sh --major` (manual) |
+
+The pre-commit hook automatically bumps `plugin.json` + `marketplace.json` when functional files are staged. The pre-push hook verifies versions are in sync before allowing push.
 
 ## Current Phase
 
-**Phase 1** — Framework + spec stage, branch isolation, and implement stage design.
+**Phase 2** — Plan stage + implement execution.
 
 | Feature | Status |
 |---------|--------|
 | Orchestrator (`aide` skill) | Done |
 | Spec stage (`aide-spec` skill) | Done |
-| Gate engine (confirm gate) | Done |
+| Plan stage (`aide-plan` skill) | Done |
+| Implement stage (subagent dispatch) | Done |
+| Gate engine (confirm / confirm_skip / auto) | Done |
 | Branch isolation (per-pipeline `aide/<slug>` branch) | Done |
 | Auto-stash on dirty working tree | Done |
-| Implement stage design (subagent-driven via Superpowers) | Done |
-| Superpowers submodule integration | Done |
-| Plan stage (`aide-plan` skill) | Phase 2 |
-| Implement stage (execution) | Phase 2 |
+| Pipeline resume (`--continue` with state.json) | Done |
+| Concurrent subagent dispatch (max 3) | Done |
+| Version management (pre-commit + pre-push hooks) | Done |
 | Test stage (`aide-test` skill) | Phase 3 |
 
 ## Dependencies

@@ -5,7 +5,7 @@
   },
   "metadata": {
     "description": "AI-Driven Development Automation \u2014 structured pipeline from requirements to implementation with human gates",
-    "version": "1.0.5"
+    "version": "1.0.6"
   },
   "plugins": [
     {
@@ -15,7 +15,7 @@
         "url": "https://github.com/zzhaa2008hj/aide.git"
       },
       "description": "Core AIDE skills: spec, plan, implement pipeline with Superpowers integration",
-      "version": "1.0.5",
+      "version": "1.0.6",
       "strict": true
     }
   ]
