@@ -38,3 +38,14 @@ stages:
       - name: after_test
         type: auto
         prompt: "Test verification complete."
+
+# Fix pipeline (rapid bug-fix / small optimization)
+fix:
+  enabled: true
+  gates:
+    - name: after_analyze
+      type: confirm_skip
+      prompt: "Review the analyze result above. Does the diagnosis look correct? (y/n/skip)"
+    - name: after_fix
+      type: confirm
+      prompt: "Review the changes and test results above. Accept the fix? (y/n)"

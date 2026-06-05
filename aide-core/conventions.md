@@ -84,3 +84,37 @@ Each new AIDE pipeline run creates a dedicated branch to isolate workflow artifa
 - **Auto-stash**: If the working tree has uncommitted changes, they are stashed before branch creation with message `AIDE: auto-stash before aide/<slug>`
 - **--continue**: Recovery runs reuse the existing `aide/*` branch — no new branch is created
 - **Post-pipeline**: The branch is left as-is; merging back is a manual user decision
+
+## Fix Pipeline Stage Order
+
+| Order | Stage     | Description                         | Executor                |
+|-------|-----------|-------------------------------------|-------------------------|
+| 0     | init      | Project context + branch creation   | Orchestrator            |
+| 1     | analyze   | Root cause → scope fence            | Orchestrator            |
+| 2     | implement | Scope-fenced code changes           | Orchestrator (1 agent)  |
+| 3     | test      | Verify + auto-retry (max 2)        | Orchestrator + aide-test|
+
+The fix pipeline is a lightweight alternative to the full pipeline, designed for bug fixes and small optimizations. It is invoked via `/aide-fix` and uses independent state tracking (`.aide/fix-state.json`), branch prefix (`aide-fix/`), and output directory (`.aide/fix/output/`).
+
+## Fix Pipeline Output Structure
+
+```
+.aide/fix/
+├── fix-state.json
+└── output/
+    ├── 1-analyze/
+    │   └── {date}-{slug}-analyze.md
+    ├── 2-implement/
+    │   └── {date}-{slug}-implement.md
+    └── 3-test/
+        └── {date}-{slug}-test-report.md
+```
+
+File naming follows the same convention: `{date}-{slug}-{stage}.md`. Re-runs append `-2`, `-3`, etc.
+
+## Fix Pipeline Git Conventions
+
+- Branch naming: `aide-fix/<slug>`
+- Auto-commit `.aide/fix/` artifacts after each stage with message: `aide-fix(<stage>): <summary>`
+- Business code changes are never auto-committed
+- After pipeline completes, the branch is left as-is; merging back is a manual user decision
