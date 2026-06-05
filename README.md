@@ -1,6 +1,8 @@
 # AIDE — AI-Driven Development Automation
 
-A Claude Code skill collection for structured, AI-driven development workflows. Business projects install AIDE via `claude plugin install` to add `/aide` — a pipeline that takes a requirement and runs it through spec → plan → implement → test with human gates at each stage.
+A Claude Code plugin for structured, AI-driven development workflows. Business projects install AIDE via `claude plugin install` to add `/aide` — a pipeline that takes a requirement and runs it through **spec → plan → implement → test** with human gates at each stage.
+
+Also supports [deepcode-cli](https://github.com/HKUDS/DeepCode) via skills-based installation (see [Install for deepcode-cli](#install-for-deepcode-cli)).
 
 ## Quick Start
 
@@ -12,7 +14,7 @@ claude plugin marketplace add https://github.com/zzhaa2008hj/aide.git
 claude plugin install aide@aide --scope project
 ```
 
-That's it. AIDE is now installed as a project plugin — skills are auto-discovered by Claude Code. `/aide`, `/aide-init`, and `/aide-update` are available.
+That's it. AIDE is now installed as a project plugin — skills are auto-discovered by Claude Code. `/aide`, `/aide-continue`, `/aide-init`, and `/aide-update` are available.
 
 Optional: run `/aide-init` to explicitly bootstrap `.aide/` and the config template (the pipeline will auto-create these on first run regardless).
 
@@ -24,11 +26,12 @@ Optional: run `/aide-init` to explicitly bootstrap `.aide/` and the config templ
 
 AIDE will:
 1. Create an `aide/<slug>` branch and stash uncommitted changes
-2. Generate a structured spec (`.aide/output/1-spec/`)
-3. Pause for your review (gate: confirm / confirm_skip / auto)
-4. On confirm, commit and proceed to plan → implement stages
-5. Plan stage decomposes the spec into dependency-tracked tasks
-6. Implement stage dispatches tasks to subagents with review gates
+2. Analyze the existing project context (tech stack, conventions, patterns)
+3. Generate a structured spec (`.aide/output/1-spec/`)
+4. Pause for your review (gate: confirm / confirm_skip / auto)
+5. Proceed through plan → implement → test stages
+6. Implement stage dispatches tasks to subagents with spec + quality reviews
+7. Test stage auto-retries failures up to 3 rounds
 
 ### Resume an interrupted pipeline
 
@@ -40,77 +43,89 @@ Validates branch, reads `.aide/state.json` to find where you left off, skips com
 
 ### Updating AIDE
 
-When AIDE releases new features or fixes:
-
 ```
 /aide-update
 ```
 
-This runs `claude plugin marketplace update aide` then `claude plugin update aide@aide --scope project`. Safe to run mid-pipeline.
+Runs `claude plugin marketplace update aide` then `claude plugin update aide@aide --scope project`. Safe to run mid-pipeline.
 
 ### Customize gates
 
 Edit `.aide/config.yaml` to change gate types per stage:
 
 - `confirm` — requires explicit y/n
-- `confirm_skip` — can be skipped (y/n/skip)
+- `confirm_skip` — can be skipped (y/n/skip); skip upgrades to `auto` permanently
 - `auto` — no pause
 
 ## Pipeline
 
-| Order | Stage     | Skill          | Description                         |
-|-------|-----------|----------------|-------------------------------------|
-| 1     | spec      | `aide-spec`    | Requirements → Specification        |
-| 2     | plan      | `aide-plan`    | Specification → Task plan           |
-| 3     | implement | Orchestrator   | Tasks → Code (subagent per task)    |
-| 4     | test      | `aide-test`    | Verification → Test report (Phase 3) |
+| Order | Stage     | Skill          | Description                            |
+|-------|-----------|----------------|----------------------------------------|
+| 0.2   | context   | Orchestrator   | Project analysis: tech stack, patterns |
+| 1     | spec      | `aide-spec`    | Requirements → Specification           |
+| 2     | plan      | `aide-plan`    | Specification → Task plan              |
+| 3     | implement | Orchestrator   | Tasks → Code (subagent per task)       |
+| 4     | test      | `aide-test`    | Test suite + spec verification + retry |
 
-The implement stage has no standalone skill. The orchestrator reads `plan.json`, resolves task dependencies via topological sort, and dispatches each task as a subagent with spec compliance + code quality reviews. Up to 3 independent tasks run in parallel.
+**Stage 0.2 (project context analysis) is mandatory.** Before any spec or code, the orchestrator maps the existing project structure, tech stack, conventions, and patterns. All subsequent stages must respect these findings.
+
+The implement stage reads `plan.json`, resolves task dependencies via topological sort, and dispatches each task through Superpowers' `subagent-driven-development` pattern (implement → spec review → quality review). Up to 3 independent tasks run in parallel.
 
 ## Project Structure
 
 ```
 AIDE/
 ├── skills/
-│   ├── aide/                          # Pipeline orchestrator
-│   ├── aide-init/                     # Bootstrap .aide/ and CLAUDE.md
-│   ├── aide-update/                   # Update AIDE installation
+│   ├── aide/                          # Pipeline orchestrator (Claude Code)
+│   ├── aide-deepcode/                 # Pipeline orchestrator (deepcode-cli)
 │   ├── aide-spec/                     # Stage 1: Requirements → Spec
 │   ├── aide-plan/                     # Stage 2: Spec → Plan
-│   ├── brainstorming/                 # Idea → design (superpowers)
-│   ├── dispatching-parallel-agents/   # Parallel task dispatch (superpowers)
-│   ├── executing-plans/               # Plan execution (superpowers)
-│   ├── finishing-a-development-branch/# Branch completion (superpowers)
-│   ├── receiving-code-review/         # Code review response (superpowers)
-│   ├── requesting-code-review/        # Code review request (superpowers)
-│   ├── subagent-driven-development/   # Subagent implementation (superpowers)
-│   ├── systematic-debugging/          # Bug investigation (superpowers)
-│   ├── test-driven-development/       # TDD workflow (superpowers)
-│   ├── using-git-worktrees/           # Worktree isolation (superpowers)
-│   ├── using-superpowers/             # Usage guide (superpowers)
-│   ├── verification-before-completion/# Completion verification (superpowers)
-│   ├── writing-plans/                 # Implementation planning (superpowers)
-│   └── writing-skills/                # Skill authoring (superpowers)
-├── aide-core/             # Shared infrastructure
-│   ├── schemas/           # JSON Schema per stage (spec, plan, implement)
-│   ├── gate.md            # Gate engine specification
-│   ├── conventions.md     # Directory, naming, branch, and git conventions
+│   ├── aide-test/                     # Stage 4: Verification → Test report
+│   ├── aide-continue/                 # Pipeline resume
+│   ├── aide-init/                     # Bootstrap .aide/ and CLAUDE.md
+│   ├── aide-update/                   # Update AIDE installation
+│   └── .../                           # 14 Superpowers skills
+├── aide-core/                         # Shared infrastructure
+│   ├── schemas/                       # JSON Schema per stage (spec, plan, implement, test)
+│   ├── conventions.md                 # Directory, naming, branch, and git conventions
+│   ├── gate.md                        # Gate engine specification
+│   ├── pipeline-protocol.md           # Shared pipeline rules (both orchestrators)
 │   └── scripts/
-│       ├── bump-version.sh        # Version bump (pre-commit auto-trigger)
-│       ├── install-hooks.sh       # Git hook deployment
-│       └── sync-superpowers.sh    # Upstream sync tool (maintainer)
-├── hooks/                 # Git hooks
-│   ├── pre-commit         # Auto-bump version on functional changes
-│   └── pre-push           # Enforce version bump before push
-├── .claude-plugin/        # Plugin manifest
-│   ├── plugin.json        # Plugin identity + version
-│   └── marketplace.json   # Self-hosted marketplace definition
-├── templates/             # Business project templates
+│       ├── bump-version.sh            # Version bump (pre-commit auto-trigger)
+│       ├── install-hooks.sh           # Git hook deployment
+│       └── sync-superpowers.sh        # Upstream sync tool (maintainer)
+├── aide_deepcode/
+│   └── install-deepcode-cli.sh        # One-line install for deepcode-cli
+├── hooks/
+│   ├── pre-commit                     # Auto-bump version on functional changes
+│   └── pre-push                       # Enforce version bump before push
+├── .claude-plugin/
+│   ├── plugin.json                    # Plugin identity + version
+│   └── marketplace.json               # Self-hosted marketplace definition
+├── templates/                         # Business project templates
 │   ├── aide.config.yaml
 │   └── CLAUDE.md.partial
-├── docs/                  # Design specs and implementation plans
-└── SUPERSPOWERS_VERSION   # Tracked upstream baseline commit
+├── docs/                              # Design specs and implementation plans
+└── SUPERSPOWERS_VERSION               # Tracked upstream baseline commit
 ```
+
+### Shared pipeline protocol
+
+Both orchestrators (`skills/aide/SKILL.md` and `skills/aide-deepcode/SKILL.md`) reference [`aide-core/pipeline-protocol.md`](aide-core/pipeline-protocol.md) for:
+
+- **CRITICAL Pipeline Discipline** — forbidden actions before Stage 3, permitted files, grounding rules
+- **Project Context Analysis** — mandatory 6-step procedure for existing projects, architecture-first for new projects
+- **State Update Patterns** — reusable `state.json` update templates (basic transition, retry init, cleanup)
+
+This eliminates ~180 lines of duplication while keeping orchestrator-specific logic inline.
+
+### Install for deepcode-cli
+
+```bash
+curl -sSL https://raw.githubusercontent.com/zzhaa2008hj/aide/master/aide_deepcode/install-deepcode-cli.sh | bash
+```
+
+Installs skills into `.agents/skills/` — deepcode-cli discovers them automatically. Stage-specific skills (spec, plan, test) are shared between Claude Code and deepcode-cli.
 
 ## Version Management
 
@@ -124,23 +139,23 @@ AIDE versions follow semver with automatic enforcement via git hooks:
 
 The pre-commit hook automatically bumps `plugin.json` + `marketplace.json` when functional files are staged. The pre-push hook verifies versions are in sync before allowing push.
 
-## Current Phase
-
-**Phase 2** — Plan stage + implement execution.
+## Feature Status
 
 | Feature | Status |
 |---------|--------|
-| Orchestrator (`aide` skill) | Done |
+| Orchestrator (CC + deepcode-cli) | Done |
 | Spec stage (`aide-spec` skill) | Done |
 | Plan stage (`aide-plan` skill) | Done |
-| Implement stage (subagent dispatch) | Done |
+| Implement stage (subagent dispatch, max 3 parallel) | Done |
+| Test stage (`aide-test` skill, auto-retry 3 rounds) | Done |
 | Gate engine (confirm / confirm_skip / auto) | Done |
+| Project context analysis (Stage 0.2, mandatory) | Done |
 | Branch isolation (per-pipeline `aide/<slug>` branch) | Done |
 | Auto-stash on dirty working tree | Done |
-| Pipeline resume (`--continue` with state.json) | Done |
-| Concurrent subagent dispatch (max 3) | Done |
+| Pipeline resume (`/aide-continue` with state.json) | Done |
+| Pipeline discipline guards (state machine enforcement) | Done |
+| Shared pipeline protocol (deduplicated orchestrators) | Done |
 | Version management (pre-commit + pre-push hooks) | Done |
-| Test stage (`aide-test` skill) | Phase 3 |
 
 ## Dependencies
 
@@ -150,3 +165,4 @@ AIDE ships Superpowers skills directly in `skills/` — no nested submodule requ
 
 - Claude Code with skill support
 - Git (for clone and auto-commits)
+- Python 3 (for `bump-version.sh` and state management scripts)
