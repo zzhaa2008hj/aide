@@ -3,30 +3,42 @@ set -euo pipefail
 # install.sh — Install AIDE plugins into a DeepCode project.
 #
 # Usage:
-#   curl -sSL https://raw.githubusercontent.com/zzhaa2008hj/aide/master/aide_deepcode/install.sh | bash
-#   or
+#   # Public repo (default):
 #   bash aide_deepcode/install.sh
+#
+#   # Private repo via SSH:
+#   AIDE_REPO=git@github.com:zzhaa2008hj/aide.git bash aide_deepcode/install.sh
+#
+#   # Custom ref:
+#   AIDE_REF=dev bash aide_deepcode/install.sh
+#
+#   # Custom target directory:
+#   bash aide_deepcode/install.sh workflows/plugins/my-aide
 
 AIDE_REPO="${AIDE_REPO:-https://github.com/zzhaa2008hj/aide.git}"
 AIDE_REF="${AIDE_REF:-master}"
 PLUGIN_DIR="${1:-workflows/plugins/aide}"
 
 echo "=== AIDE DeepCode Plugin Install ==="
+echo "  Repo: $AIDE_REPO"
+echo "  Ref:  $AIDE_REF"
+echo "  Dest: $PLUGIN_DIR"
 echo ""
 
-# Step 1: Verify we're in a DeepCode project
-if [ ! -f "deepcode_config.json" ] && [ ! -f "deepcode_config.json.example" ]; then
-    echo "[warn]  deepcode_config.json not found — are you in a DeepCode project root?"
-    echo "         Continuing anyway..."
+# Step 1: Verify git access
+if ! git ls-remote "$AIDE_REPO" "$AIDE_REF" >/dev/null 2>&1; then
+    echo "[error] Cannot access $AIDE_REPO"
+    echo "        If this is a private repo, use SSH:"
+    echo "        AIDE_REPO=git@github.com:zzhaa2008hj/aide.git bash aide_deepcode/install.sh"
+    exit 1
 fi
 
-# Step 2: Create plugins directory
-mkdir -p "$(dirname "$PLUGIN_DIR")"
+# Step 2: Create target directory
 rm -rf "$PLUGIN_DIR"
 mkdir -p "$PLUGIN_DIR"
 
 # Step 3: Sparse checkout aide_deepcode/ only
-echo "[info]  Fetching aide_deepcode/ from $AIDE_REPO ($AIDE_REF)..."
+echo "[info]  Fetching aide_deepcode/ ..."
 cd "$PLUGIN_DIR"
 git init -q
 git remote add origin "$AIDE_REPO" 2>/dev/null || git remote set-url origin "$AIDE_REPO"
@@ -52,4 +64,3 @@ echo "Files installed:"
 ls -1 "$PLUGIN_DIR"
 echo ""
 echo "Restart DeepCode to load the AIDE plugins."
-echo "Test with: /aide \"<your feature description>\""
