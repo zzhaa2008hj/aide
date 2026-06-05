@@ -97,7 +97,30 @@ echo "=== Installation complete ==="
 echo "$COPIED skills installed:"
 for dst_name in "${SKILL_MAP[@]}"; do
     if [ -f "$SKILLS_DIR/$dst_name/SKILL.md" ]; then
-        desc=$(head -3 "$SKILLS_DIR/$dst_name/SKILL.md" | grep "description" | sed 's/description: >-//' | xargs | cut -c1-80)
+        desc=$(python3 -c "
+text = open('$SKILLS_DIR/$dst_name/SKILL.md').read()
+parts = text.split('---')
+if len(parts) >= 2:
+    lines = parts[1].strip().split('\n')
+    in_desc = False
+    desc_parts = []
+    for line in lines:
+        if line.startswith('description:'):
+            val = line.split(':', 1)[1].strip()
+            if val in ('>-', '>', '|-', '|'):
+                in_desc = True
+            else:
+                desc_parts.append(val.strip('\"'))
+                break
+        elif in_desc and line.startswith('  '):
+            desc_parts.append(line.strip())
+        elif in_desc:
+            break
+    desc = ' '.join(desc_parts).strip()
+    # Remove 'Invoke via' instruction for cleaner display
+    desc = desc.split('Invoke via')[0].strip()
+    print(desc[:80])
+" 2>/dev/null)
         echo "  /$dst_name — ${desc:-<no description>}"
     fi
 done
