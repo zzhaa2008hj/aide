@@ -112,12 +112,13 @@ skill_dest() {
         aide-spec) echo "aide-spec" ;;
         aide-plan) echo "aide-plan" ;;
         aide-test) echo "aide-test" ;;
+        aide-fix) echo "aide-fix" ;;
         aide-continue) echo "aide-continue" ;;
         aide-init) echo "aide-init" ;;
     esac
 }
 
-SKILL_SOURCES="aide-deepcode aide-spec aide-plan aide-test aide-continue aide-init"
+SKILL_SOURCES="aide-deepcode aide-spec aide-plan aide-test aide-fix aide-continue aide-init"
 
 UPDATED=0
 SKIPPED=0
