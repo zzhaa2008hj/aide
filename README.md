@@ -2,7 +2,7 @@
 
 A Claude Code plugin for structured, AI-driven development workflows. Business projects install AIDE via `claude plugin install` to add `/aide` — a pipeline that takes a requirement and runs it through **spec → plan → implement → test** with human gates at each stage.
 
-Also supports [deepcode-cli](https://github.com/HKUDS/DeepCode) via skills-based installation (see [Install for deepcode-cli](#install-for-deepcode-cli)).
+Also supports [CodeWhale](https://github.com/Hmbown/CodeWhale) (primary) and [deepcode-cli](https://github.com/HKUDS/DeepCode) via skills-based installation (see [Install for CodeWhale](#install-for-codewhale) and [Install for deepcode-cli](#install-for-deepcode-cli)).
 
 ## Quick Start
 
@@ -97,6 +97,7 @@ AIDE/
 ├── skills/
 │   ├── aide/                          # Pipeline orchestrator (Claude Code)
 │   ├── aide-deepcode/                 # Pipeline orchestrator (deepcode-cli)
+│   ├── aide-codewhale/                 # Pipeline orchestrator (CodeWhale)
 │   ├── aide-fix/                      # Bug-fix pipeline (analyze → implement → test)
 │   ├── aide-spec/                     # Stage 1: Requirements → Spec
 │   ├── aide-plan/                     # Stage 2: Spec → Plan
@@ -138,6 +139,16 @@ Both orchestrators (`skills/aide/SKILL.md` and `skills/aide-deepcode/SKILL.md`) 
 - **State Update Patterns** — reusable `state.json` update templates (basic transition, retry init, cleanup)
 
 This eliminates ~180 lines of duplication while keeping orchestrator-specific logic inline.
+
+### Install for CodeWhale
+
+In a CodeWhale session, run:
+
+```
+/skill install github:zzhaa2008hj/aide
+```
+
+CodeWhale discovers skills from `.agents/skills/` and `~/.codewhale/skills/`. The orchestrator is self-contained — no additional stage skills needed. Invoke via `$aide "<description>"` or `/aide "<description>"`.
 
 ### Install for deepcode-cli
 
@@ -186,6 +197,7 @@ The pre-commit hook automatically bumps `plugin.json` + `marketplace.json` when 
 | Fix pipeline resume (state file detection) | Done |
 | DeepCode Analysis in implement stage (both orchestrators) | Done |
 | DeepCode Verification in test stage (both orchestrators) | Done |
+| CodeWhale orchestrator (`aide-codewhale`) | Done |
 
 ### Planned / TODO
 
