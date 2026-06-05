@@ -141,6 +141,8 @@ The pre-commit hook automatically bumps `plugin.json` + `marketplace.json` when 
 
 ## Feature Status
 
+### Done
+
 | Feature | Status |
 |---------|--------|
 | Orchestrator (CC + deepcode-cli) | Done |
@@ -156,6 +158,15 @@ The pre-commit hook automatically bumps `plugin.json` + `marketplace.json` when 
 | Pipeline discipline guards (state machine enforcement) | Done |
 | Shared pipeline protocol (deduplicated orchestrators) | Done |
 | Version management (pre-commit + pre-push hooks) | Done |
+
+### Planned / TODO
+
+| Feature | Priority | Notes |
+|---------|----------|-------|
+| Automated tests (bump-version, hooks, plugin deps) | Medium | Toolchain has zero test coverage |
+| Pure-bash version parser fallback | Low | Remove python3 dependency from version scripts |
+| install.sh path safety guard | Low | Validate `$PLUGIN_DIR` before `rm -rf` |
+| Long-term orchestrator unification | Low | Single pipeline definition driving both CC and deepcode-cli |
 
 ## Dependencies
 
