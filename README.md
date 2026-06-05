@@ -2,7 +2,7 @@
 
 A Claude Code plugin for structured, AI-driven development workflows. Business projects install AIDE via `claude plugin install` to add `/aide` — a pipeline that takes a requirement and runs it through **spec → plan → implement → test** with human gates at each stage.
 
-Also supports [CodeWhale](https://github.com/Hmbown/CodeWhale) (primary) and [deepcode-cli](https://github.com/HKUDS/DeepCode) via skills-based installation (see [Install for CodeWhale](#install-for-codewhale) and [Install for deepcode-cli](#install-for-deepcode-cli)).
+Also supports [deepcode-cli](https://github.com/HKUDS/DeepCode) (primary) and [CodeWhale](https://github.com/Hmbown/CodeWhale) via skills-based installation. See [README-cw.md](README-cw.md) for CodeWhale and [Install for deepcode-cli](#install-for-deepcode-cli) for deepcode-cli.
 
 ## Quick Start
 
@@ -83,9 +83,9 @@ A lightweight alternative for bug fixes and small optimizations:
 
 Uses independent state tracking (`.aide/fix-state.json`), branch prefix (`aide-fix/`), and output directory (`.aide/fix/output/`). Each stage produces paired outputs: `.md` for human review and `.json` for AI consumption. Supports resume via state file detection. Invoke via `/aide-fix "<bug description>"`.
 
-### DeepCode Integration
+### Code Analysis Integration
 
-Both orchestrators include mandatory DeepCode analysis stages:
+All orchestrators include mandatory code analysis stages:
 
 - **Stage 3 (implement)**: DeepCode Analysis scans all changed files for correctness, security, code quality, and style issues
 - **Stage 4 (test)**: DeepCode Verification performs final comprehensive analysis — critical findings downgrade the test verdict from pass to fail
@@ -140,16 +140,6 @@ Both orchestrators (`skills/aide/SKILL.md` and `skills/aide-deepcode/SKILL.md`) 
 
 This eliminates ~180 lines of duplication while keeping orchestrator-specific logic inline.
 
-### Install for CodeWhale
-
-In a CodeWhale session, run:
-
-```
-/skill install github:zzhaa2008hj/aide
-```
-
-CodeWhale discovers skills from `.agents/skills/` and `~/.codewhale/skills/`. The orchestrator is self-contained — no additional stage skills needed. Invoke via `$aide "<description>"` or `/aide "<description>"`.
-
 ### Install for deepcode-cli
 
 ```bash
@@ -180,7 +170,7 @@ The pre-commit hook automatically bumps `plugin.json` + `marketplace.json` when 
 
 | Feature | Status |
 |---------|--------|
-| Orchestrator (CC + deepcode-cli) | Done |
+| Orchestrator (CC + deepcode-cli + CodeWhale) | Done |
 | Spec stage (`aide-spec` skill) | Done |
 | Plan stage (`aide-plan` skill) | Done |
 | Implement stage (subagent dispatch, max 3 parallel) | Done |
@@ -195,8 +185,8 @@ The pre-commit hook automatically bumps `plugin.json` + `marketplace.json` when 
 | Version management (pre-commit + pre-push hooks) | Done |
 | Fix pipeline (`/aide-fix`, analyze→implement→test) | Done |
 | Fix pipeline resume (state file detection) | Done |
-| DeepCode Analysis in implement stage (both orchestrators) | Done |
-| DeepCode Verification in test stage (both orchestrators) | Done |
+| DeepCode Analysis in implement stage (all orchestrators) | Done |
+| DeepCode Verification in test stage (all orchestrators) | Done |
 | CodeWhale orchestrator (`aide-codewhale`) | Done |
 
 ### Planned / TODO
