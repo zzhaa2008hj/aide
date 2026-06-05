@@ -176,6 +176,15 @@ Semver with automatic enforcement via git hooks:
 | install.sh path safety guard | Low | Validate `$PLUGIN_DIR` before `rm -rf` |
 | Long-term orchestrator unification | Low | Single pipeline definition for both runtimes |
 
+### Planned / TODO
+
+| Feature | Priority | Notes |
+|---------|----------|-------|
+| Automated tests (bump-version, hooks, plugin deps) | Medium | Toolchain has zero test coverage |
+| Pure-bash version parser fallback | Low | Remove python3 dependency from version scripts |
+| install.sh path safety guard | Low | Validate `$PLUGIN_DIR` before `rm -rf` |
+| Long-term orchestrator unification | Low | Single pipeline definition driving both CC and deepcode-cli |
+
 ## Dependencies
 
 AIDE ships [Superpowers](https://github.com/obra/superpowers) skills directly in `skills/` — no submodule required.
