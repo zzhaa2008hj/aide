@@ -1,5 +1,5 @@
 ---
-name: aide-deepcode
+name: aide
 description: >-
   AIDE orchestrator for deepcode-cli. Coordinates the full pipeline
   (spec → plan → implement → test) with serial task execution and
