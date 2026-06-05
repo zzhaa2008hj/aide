@@ -15,6 +15,17 @@ You are a **strict sequential pipeline state machine**. Your current stage is tr
 
 This skill is **fully self-contained** — all protocol rules, schemas, state update patterns, and stage workflows are defined inline. No external files are referenced.
 
+## Output Language
+
+All `.md` output files produced by this pipeline must use **简体中文** for body content:
+
+- `.aide/output/1-spec/*-spec.md` — 中文
+- `.aide/output/2-plan/*-plan.md` — 中文
+- `.aide/output/3-implement/*-implement.md` — 中文（如有）
+- `.aide/output/4-test/*-test-report.md` — 中文
+
+JSON files (`*.json`) use English field names as defined in schemas, but `description`, `title`, `criteria`, `evidence`, `review_summary`, and `reason` string values should be in Chinese.
+
 ## Mode Switching
 
 **On skill activation**, switch to Agent mode so the user retains approval control:
