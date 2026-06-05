@@ -114,6 +114,42 @@ Classify each changed file:
 - `files_with_tests`: has a matching test file
 - `files_without_tests`: no matching test file found
 
+### Step 4.5: DeepCode Test Quality Analysis (MANDATORY)
+
+**Goal**: Augment the coverage check with deep analysis of both source and test files. The coverage check (Step 4) only verifies that test files *exist* — this step checks whether they are actually *good*. Catch weak assertions, missing edge case coverage, and test anti-patterns that a file-existence check misses.
+
+Use your native analysis capabilities to examine both the changed files and their corresponding test files:
+
+**Source file analysis** — for each changed source file without a test match, look for:
+- Complex logic that should be tested but isn't
+- Error handling paths with no coverage
+- Public API surfaces without test coverage
+
+**Test file analysis** — for each test file found, check for:
+- **Weak assertions**: Tests that don't actually verify behavior (e.g., `assert true`, no assertions at all)
+- **Missing edge cases**: Happy-path only, no error/edge/boundary coverage
+- **Test anti-patterns**: Disabled tests, focused tests (`.only`), console.log in tests, empty test bodies
+- **Over-mocking**: Tests that only verify mock behavior, not real behavior
+
+Store findings in the `deepcode_test_quality` field of `test-report.json`:
+
+```json
+{
+  "deepcode_test_quality": {
+    "source_issues": 2,
+    "test_issues": 1,
+    "test_anti_patterns": 0,
+    "details": [
+      {
+        "severity": "warning",
+        "file": "src/utils/parser.py",
+        "message": "parse() has 3 error branches with no corresponding test cases"
+      }
+    ]
+  }
+}
+```
+
 ### Step 5: Determine verdict
 
 Apply the verdict rules:
@@ -149,6 +185,13 @@ Write `$BASE.json` conforming to `test.schema.json`:
     "files_without_tests": [],
     "overall": "100% of changed files have test coverage"
   },
+  "deepcode_test_quality": {
+    "status": "completed|unavailable",
+    "source_issues": 0,
+    "test_issues": 0,
+    "test_anti_patterns": 0,
+    "details": []
+  },
   "verdict": "pass"
 }
 ```
@@ -180,6 +223,7 @@ Write `$BASE.md` — human-readable summary with test results table, spec verifi
 Test suite: 12 passed, 0 failed, 2 skipped
 Spec verification: 5/5 criteria passed
 Coverage: 100%
+DeepCode test quality: N source issues, M test issues (K anti-patterns)
 Verdict: pass
 ```
 

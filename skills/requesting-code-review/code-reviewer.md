@@ -30,6 +30,18 @@ Task tool (general-purpose):
     git diff {BASE_SHA}..{HEAD_SHA}
     ```
 
+    ## DeepCode Pre-Review Scan
+
+    {DEEPCODE_RESULTS}
+
+    The scan above was performed on the changed files before dispatching you. Use these results as a starting point:
+    - **Verify** each finding — is it a true positive in context? Check the actual code.
+    - **Re-classify** severity as needed — the pre-review's severity assessment may differ from actual impact.
+    - **Supplement** — the pre-review may miss architectural, design, or requirement-alignment issues. Cover those yourself.
+    - **Filter noise** — if a pre-review finding is a false positive, note it briefly and move on.
+
+    If no pre-review was performed, skip this section and perform the full review manually.
+
     ## What to Check
 
     **Plan alignment:**
@@ -82,6 +94,7 @@ Task tool (general-purpose):
 
     #### Critical (Must Fix)
     [Bugs, security issues, data loss risks, broken functionality]
+    [Include verified DeepCode findings re-classified as Critical]
 
     #### Important (Should Fix)
     [Architecture problems, missing features, poor error handling, test gaps]
@@ -94,6 +107,7 @@ Task tool (general-purpose):
     - What's wrong
     - Why it matters
     - How to fix (if not obvious)
+    - Source: "Manual review" or "Pre-review (verified)" or "Pre-review (re-classified from <original>)"
 
     ### Recommendations
     [Improvements for code quality, architecture, or process]
@@ -112,6 +126,7 @@ Task tool (general-purpose):
     - Explain WHY each issue matters
     - Acknowledge strengths
     - Give a clear verdict
+    - Verify DeepCode findings before reporting them
 
     **DON'T:**
     - Say "looks good" without checking
@@ -119,6 +134,7 @@ Task tool (general-purpose):
     - Give feedback on code you didn't actually read
     - Be vague ("improve error handling")
     - Avoid giving a clear verdict
+    - Blindly repeat all DeepCode findings without verification
 ```
 
 **Placeholders:**
@@ -126,6 +142,7 @@ Task tool (general-purpose):
 - `{PLAN_OR_REQUIREMENTS}` — what it should do (plan file path, task text, or requirements)
 - `{BASE_SHA}` — starting commit
 - `{HEAD_SHA}` — ending commit
+- `{DEEPCODE_RESULTS}` — structured pre-review findings from the orchestrator's native analysis of the diff, or "No pre-review scan performed — performing full manual review."
 
 **Reviewer returns:** Strengths, Issues (Critical / Important / Minor), Recommendations, Assessment
 

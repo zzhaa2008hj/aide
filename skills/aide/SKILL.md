@@ -452,11 +452,48 @@ After all tasks resolve, construct `implement.json`:
     {"task_id": "T001", "status": "done", "commits": ["<sha>"], "review_summary": "spec passed, quality approved"},
     {"task_id": "T002", "status": "blocked", "reason": "<why>"},
     {"task_id": "T003", "status": "done", "commits": ["<sha>"], "review_summary": "spec passed, quality approved"}
-  ]
+  ],
+  "deepcode_analysis": {
+    "status": "completed|unavailable",
+    "issues_count": 0,
+    "issues": []
+  }
 }
 ```
 
 Write this to `.aide/output/3-implement/implement.json`.
+
+### Step 3.4.5: DeepCode Analysis (MANDATORY)
+
+**Goal**: Leverage your native code analysis capabilities to catch issues the subagent reviewers may have missed. You are running inside deepcode-cli — use its built-in static analysis to find bugs, security vulnerabilities, code smells, and anti-patterns.
+
+Read every file listed in `changed_files` from `implement.json`. For each file, perform a thorough static analysis covering:
+
+- **Correctness**: Logic errors, off-by-one, null/undefined risks, race conditions, resource leaks
+- **Security**: Injection risks, missing input validation, insecure defaults, exposed secrets
+- **Code quality**: Dead code, overly complex functions, duplicated logic, missing error handling
+- **Style & convention**: Naming consistency, file organization, pattern adherence with existing codebase
+
+Record your findings in the `deepcode_analysis` field of `implement.json`:
+
+```json
+{
+  "deepcode_analysis": {
+    "files_analyzed": ["src/foo.py", "src/bar.ts"],
+    "issues": [
+      {
+        "severity": "critical|warning|info",
+        "file": "src/foo.py",
+        "line": 42,
+        "message": "Potential null dereference — user.name accessed without null check",
+        "category": "correctness|security|quality|style"
+      }
+    ]
+  }
+}
+```
+
+Report findings concisely — focus on actionable issues, not noise. Flag critical issues prominently but do NOT block the pipeline here — the test stage will evaluate their impact on the verdict.
 
 ### Step 3.5: Report
 
@@ -470,6 +507,7 @@ Present the implement stage summary:
 
   N/M tasks completed in B batches, K blocked.
   Changed: <file list>
+  DeepCode: <N> issues (C critical, W warning, I info)
 
   To fix blocked tasks, update plan.json and run /aide-continue
 ```
@@ -512,6 +550,40 @@ Load the `aide-test` skill via the Skill tool. Pass the implement stage summary 
 
 After the skill completes, verify `.aide/output/4-test/test-report.json` and `.aide/output/4-test/test-report.md` exist.
 
+### Step 4.2.5: DeepCode Verification (MANDATORY)
+
+**Goal**: Run a final comprehensive static analysis on the complete change set. This catches issues that tests alone may miss — code smells, security gaps, and architectural problems. Since you are running inside deepcode-cli, use your native analysis capabilities.
+
+Read all `changed_files` from `.aide/output/3-implement/implement.json`. Perform a deep verification pass with these specific lenses:
+
+- **Bug detection**: Look for logic errors, edge cases not covered by tests, incorrect assumptions
+- **Security audit**: Injection vectors, missing auth checks, data exposure risks
+- **Regression risk**: Could these changes break existing functionality? Trace callers and dependents.
+- **Test quality**: Are the tests meaningful (real assertions, edge cases) or superficial (mock-only, happy-path)?
+
+Record findings in `.aide/output/4-test/test-report.json` under a `deepcode_verification` field:
+
+```json
+{
+  "deepcode_verification": {
+    "critical": 0,
+    "warning": 3,
+    "info": 5,
+    "issues": [
+      {
+        "severity": "warning",
+        "file": "src/api/users.py",
+        "line": 88,
+        "message": "Missing rate limiting on user creation endpoint",
+        "category": "security"
+      }
+    ]
+  }
+}
+```
+
+**Verdict influence**: If critical issues are found, downgrade a `pass` verdict to `fail`. Warnings and info-level findings do NOT change the verdict — they are informational for the user.
+
 ### Step 4.3: Evaluate verdict
 
 Read `verdict` from `test-report.json`:
@@ -547,6 +619,7 @@ After test stage completes (verdict `pass` or user accepts), update state.json f
   Tests: 12 passed, 0 failed, 2 skipped
   Spec: 5/5 criteria verified
   Coverage: 100%
+  DeepCode: N issues (C critical, W warning)
 
 Pipeline complete. All 4 stages done.
 ```
@@ -560,12 +633,12 @@ After all enabled stages have completed, present the pipeline summary:
 ```
 ## AIDE Pipeline Complete
 
-| Stage   | Status     |
-|---------|------------|
-| spec    | Completed  |
-| plan    | Completed  |
-| implement | Completed |
-| test    | Completed  |
+| Stage     | Status    | DeepCode      |
+|-----------|-----------|---------------|
+| spec      | Completed | —             |
+| plan      | Completed | —             |
+| implement | Completed | N issues      |
+| test      | Completed | N issues      |
 
 Branch: <current-branch>
 ```
