@@ -147,8 +147,8 @@ fix:
       type: confirm_skip
       prompt: "Review the analyze result above. Does the diagnosis look correct? (y/n/skip)"
     - name: after_fix
-      type: confirm
-      prompt: "Review the changes and test results above. Accept the fix? (y/n)"
+      type: confirm_skip
+      prompt: "Review the changes and test results above. Accept the fix? (y/n/skip)"
 ```
 
 If `.aide/config.yaml` exists, parse it. The config structure uses flat gate entries under the `fix` key:
@@ -287,7 +287,9 @@ Assess the fix risk based on:
 
 ### Step 1.5: Write analyze output
 
-Write the analysis to `.aide/fix/output/1-analyze/{date}-{slug}-analyze.md`:
+Write BOTH outputs — `.md` for human review and `.json` for AI consumption.
+
+**Human-readable** — `.aide/fix/output/1-analyze/{date}-{slug}-analyze.md`:
 
 ```markdown
 ## Analyze Result: <brief summary>
@@ -304,9 +306,45 @@ Write the analysis to `.aide/fix/output/1-analyze/{date}-{slug}-analyze.md`:
 **Reasoning:** <1-2 sentences explaining the diagnosis and why this is the minimal fix>
 ```
 
+**Machine-readable** — `.aide/fix/output/1-analyze/{date}-{slug}-analyze.json`:
+
+```json
+{
+  "slug": "<slug>",
+  "root_cause": "<one sentence>",
+  "files_to_modify": [
+    {"file": "path/to/file1.ext", "change": "<what needs to change>"}
+  ],
+  "risk": "low|medium|high",
+  "deepcode": {
+    "issues_found": 0,
+    "issues_related": 0
+  },
+  "reasoning": "<1-2 sentences>"
+}
+```
+
+Write the JSON via:
+```bash
+python3 -c "
+import json
+data = {
+    'slug': '<slug>',
+    'root_cause': '<root cause>',
+    'files_to_modify': [{'file': '<path>', 'change': '<desc>'}],
+    'risk': 'low|medium|high',
+    'deepcode': {'issues_found': 0, 'issues_related': 0},
+    'reasoning': '<reasoning>'
+}
+with open('.aide/fix/output/1-analyze/{date}-{slug}-analyze.json', 'w') as f:
+    json.dump(data, f, indent=2)
+    f.write('\n')
+"
+```
+
 Where `{date}` is `YYYY-MM-DD` and `{slug}` comes from `fix-state.json`.
 
-Check if a file with this name already exists. If so, append `-2`, `-3`, etc.
+Check if these files already exist. If so, append `-2`, `-3`, etc.
 
 ### Step 1.6: Update state — set scope fence
 
@@ -421,7 +459,9 @@ Apply changes with these constraints:
 
 ### Step 2.4: Write implement summary
 
-Write to `.aide/fix/output/2-implement/{date}-{slug}-implement.md`:
+Write BOTH outputs — `.md` for human review and `.json` for AI consumption.
+
+**Human-readable** — `.aide/fix/output/2-implement/{date}-{slug}-implement.md`:
 
 ```markdown
 ## Implement Result: <brief summary>
@@ -433,6 +473,39 @@ Write to `.aide/fix/output/2-implement/{date}-{slug}-implement.md`:
 **Diff summary:** <+N/-M lines across K files>
 
 **Scope fence compliance:** Verified — all changes within fence
+```
+
+**Machine-readable** — `.aide/fix/output/2-implement/{date}-{slug}-implement.json`:
+
+```json
+{
+  "slug": "<slug>",
+  "changes": [
+    {"file": "path/to/file1.ext", "change": "<what changed>"}
+  ],
+  "diff_summary": {
+    "lines_added": 0,
+    "lines_removed": 0,
+    "files_changed": 0
+  },
+  "scope_fence_compliance": true
+}
+```
+
+Write the JSON via:
+```bash
+python3 -c "
+import json
+data = {
+    'slug': '<slug>',
+    'changes': [{'file': '<path>', 'change': '<desc>'}],
+    'diff_summary': {'lines_added': <N>, 'lines_removed': <M>, 'files_changed': <K>},
+    'scope_fence_compliance': True
+}
+with open('.aide/fix/output/2-implement/{date}-{slug}-implement.json', 'w') as f:
+    json.dump(data, f, indent=2)
+    f.write('\n')
+"
 ```
 
 ### Step 2.5: Proceed to Stage 3
@@ -563,7 +636,9 @@ If tests are still failing after reaching `test_retries >= 2` (2 retries exhaust
 
 ### Step 3.5: Write test report
 
-Write to `.aide/fix/output/3-test/{date}-{slug}-test-report.md`:
+Write BOTH outputs — `.md` for human review and `.json` for AI consumption.
+
+**Human-readable** — `.aide/fix/output/3-test/{date}-{slug}-test-report.md`:
 
 ```markdown
 ## Test Report: <slug>
@@ -582,10 +657,48 @@ Write to `.aide/fix/output/3-test/{date}-{slug}-test-report.md`:
 **Scope fence compliance:** Verified
 ```
 
-### Step 3.6: Gate 3 — confirm
+**Machine-readable** — `.aide/fix/output/3-test/{date}-{slug}-test-report.json`:
 
-Use `AskUserQuestion`:
+```json
+{
+  "slug": "<slug>",
+  "test_command": "<command>",
+  "result": "pass|fail",
+  "summary": {
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0
+  },
+  "retries": 0,
+  "details": ["<detail>"],
+  "scope_fence_compliance": true
+}
+```
 
+Write the JSON via:
+```bash
+python3 -c "
+import json
+data = {
+    'slug': '<slug>',
+    'test_command': '<command>',
+    'result': 'pass|fail',
+    'summary': {'passed': <N>, 'failed': <M>, 'skipped': <S>},
+    'retries': <retry_count>,
+    'details': ['<detail>'],
+    'scope_fence_compliance': True
+}
+with open('.aide/fix/output/3-test/{date}-{slug}-test-report.json', 'w') as f:
+    json.dump(data, f, indent=2)
+    f.write('\n')
+"
+```
+
+### Step 3.6: Gate 3 — after_fix
+
+Read the gate config for `after_fix` from the loaded configuration. Process according to gate type:
+
+**If type is `confirm`**:
 ```
 Question: "Fix complete. Review the changes and test results above. Accept?"
 Options:
@@ -593,13 +706,27 @@ Options:
   - "n — reject, provide feedback" — Return to Stage 2 for revision
 Multi-select: false
 ```
-
 - `y` → Proceed to Step 3.7.
 - `n` → Ask the user for feedback. After receiving feedback:
   1. Reset `current_stage` to `"implement"` in `fix-state.json` (remove `"test"` and `"implement"` from `completed_stages`; keep `"analyze"`).
   2. Reset `test_retries` to 0.
   3. Return to Stage 2 (Implement) with the user's feedback.
   4. After re-implementing, proceed through Stage 3 again.
+
+**If type is `confirm_skip`**:
+```
+Question: "Fix complete. Review the changes and test results above. Accept?"
+Options:
+  - "y — accept (Recommended)" — Accept the fix and complete the pipeline
+  - "skip — auto-accept this gate in future runs"
+  - "n — reject, provide feedback" — Return to Stage 2 for revision
+Multi-select: false
+```
+- `y` → Proceed to Step 3.7.
+- `skip` → Proceed. **Persist**: update `.aide/config.yaml` to change this gate's type from `confirm_skip` to `auto`. Continue to Step 3.7.
+- `n` → Same feedback flow as `confirm` type above.
+
+**If type is `auto`**: Proceed directly to Step 3.7. No user interaction.
 
 ### Step 3.7: Commit artifacts
 

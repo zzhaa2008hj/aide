@@ -103,14 +103,17 @@ The fix pipeline is a lightweight alternative to the full pipeline, designed for
 ├── fix-state.json
 └── output/
     ├── 1-analyze/
-    │   └── {date}-{slug}-analyze.md
+    │   ├── {date}-{slug}-analyze.md     # Human-readable root cause analysis
+    │   └── {date}-{slug}-analyze.json   # Machine-readable (AI consumption)
     ├── 2-implement/
-    │   └── {date}-{slug}-implement.md
+    │   ├── {date}-{slug}-implement.md    # Human-readable change summary
+    │   └── {date}-{slug}-implement.json  # Machine-readable (AI consumption)
     └── 3-test/
-        └── {date}-{slug}-test-report.md
+        ├── {date}-{slug}-test-report.md  # Human-readable test results
+        └── {date}-{slug}-test-report.json # Machine-readable (AI consumption)
 ```
 
-File naming follows the same convention: `{date}-{slug}-{stage}.md`. Re-runs append `-2`, `-3`, etc.
+Each stage produces both `.md` (for human review) and `.json` (for AI consumption). File naming follows the same convention: `{date}-{slug}-{stage}.{ext}`. Re-runs append `-2`, `-3`, etc.
 
 ## Fix Pipeline Git Conventions
 

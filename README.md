@@ -81,7 +81,7 @@ A lightweight alternative for bug fixes and small optimizations:
 | 2     | implement | Scope-fenced code changes           |
 | 3     | test      | Verify + auto-retry (max 2)        |
 
-Uses independent state tracking (`.aide/fix-state.json`), branch prefix (`aide-fix/`), and output directory (`.aide/fix/output/`). Supports resume via state file detection. Invoke via `/aide-fix "<bug description>"`.
+Uses independent state tracking (`.aide/fix-state.json`), branch prefix (`aide-fix/`), and output directory (`.aide/fix/output/`). Each stage produces paired outputs: `.md` for human review and `.json` for AI consumption. Supports resume via state file detection. Invoke via `/aide-fix "<bug description>"`.
 
 ### DeepCode Integration
 

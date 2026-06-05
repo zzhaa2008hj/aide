@@ -84,6 +84,63 @@ Create `.aide/state.json`:
 
 **State updated.** You are now entering Stage 1.
 
+### 0.6 Load configuration
+
+Read configuration from `.aide/config.yaml`. If the file does not exist or cannot be read, use the following hardcoded defaults:
+
+```yaml
+# Default configuration (used when .aide/config.yaml is missing)
+version: "1"
+language: ""
+stages:
+  spec:
+    enabled: true
+    gates:
+      - name: after_spec
+        type: confirm_skip
+        prompt: "Review the spec at .aide/output/1-spec/. Does this look right? (y/n/skip)"
+  plan:
+    enabled: true
+    gates:
+      - name: after_plan
+        type: confirm_skip
+        prompt: "Review the plan at .aide/output/2-plan/. Does this look right? (y/n/skip)"
+  implement:
+    enabled: true
+    gates:
+      - name: after_implement
+        type: auto
+  test:
+    enabled: true
+    gates:
+      - name: after_test
+        type: auto
+```
+
+If `.aide/config.yaml` exists, parse it. The config structure uses flat gate entries:
+
+```yaml
+stages:
+  <stage_name>:
+    enabled: <bool>
+    gates:
+      - name: <gate_name>
+        type: <gate_type>       # "confirm", "confirm_skip", or "auto"
+        prompt: "<prompt text>"
+```
+
+Unknown gate types are treated as `confirm` with a warning.
+
+### Gate Type Reference
+
+| Type | Behavior |
+|------|----------|
+| `confirm` | Requires explicit y/n. No skip option. |
+| `confirm_skip` | y = proceed, n = reject (feedback loop), **skip = proceed + persist as `auto`** |
+| `auto` | No user interaction. Passes automatically. |
+
+**When user selects `skip` on a `confirm_skip` gate**: Update `.aide/config.yaml` to change that gate's type from `confirm_skip` to `auto`. Future pipeline runs will auto-pass this gate.
+
 ---
 
 ## Stage 1: spec
@@ -109,8 +166,9 @@ If either file is missing, go back and complete the spec stage.
 
 ### Gate
 
-Use `AskUserQuestion` with `required: true`:
+Read the gate config for `after_spec` from the loaded configuration. Process according to gate type:
 
+**If type is `confirm`**:
 ```
 Question: "Review the spec. Does this look right?"
 Header: "Spec"
@@ -118,9 +176,23 @@ Options:
   - "y: Approve, continue to plan (Recommended)"
   - "n: Reject, provide feedback to revise"
 ```
-
 - `y` → proceed to state update
-- `n` → collect feedback, re-run Stage 1 with feedback appended
+- `n` → collect feedback, re-run Stage 1 with feedback appended, restart gates
+
+**If type is `confirm_skip`**:
+```
+Question: "Review the spec. Does this look right?"
+Header: "Spec"
+Options:
+  - "y: Approve, continue to plan (Recommended)"
+  - "skip: Skip — auto-approve this gate in future runs"
+  - "n: Reject, provide feedback to revise"
+```
+- `y` → proceed to state update
+- `skip` → Proceed. **Persist**: update `.aide/config.yaml` to change this gate's type from `confirm_skip` to `auto`. Continue to state update.
+- `n` → collect feedback, re-run Stage 1 with feedback appended, restart gates
+
+**If type is `auto`**: Proceed directly to state update. No user interaction.
 
 ### State update
 
@@ -152,8 +224,9 @@ ls -la .aide/output/2-plan/*-plan.md .aide/output/2-plan/*-plan.json
 
 ### Gate
 
-Use `AskUserQuestion` with `required: true`:
+Read the gate config for `after_plan` from the loaded configuration. Process according to gate type:
 
+**If type is `confirm`**:
 ```
 Question: "Review the implementation plan. Does this look right?"
 Header: "Plan"
@@ -161,9 +234,23 @@ Options:
   - "y: Approve, continue to implement (Recommended)"
   - "n: Reject, provide feedback to revise"
 ```
-
 - `y` → proceed
-- `n` → collect feedback, re-run Stage 2
+- `n` → collect feedback, re-run Stage 2, restart gates
+
+**If type is `confirm_skip`**:
+```
+Question: "Review the implementation plan. Does this look right?"
+Header: "Plan"
+Options:
+  - "y: Approve, continue to implement (Recommended)"
+  - "skip: Skip — auto-approve this gate in future runs"
+  - "n: Reject, provide feedback to revise"
+```
+- `y` → proceed
+- `skip` → Proceed. **Persist**: update `.aide/config.yaml` to change this gate's type from `confirm_skip` to `auto`. Continue.
+- `n` → collect feedback, re-run Stage 2, restart gates
+
+**If type is `auto`**: Proceed directly. No user interaction.
 
 ### State update
 
