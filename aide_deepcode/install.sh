@@ -25,6 +25,20 @@ echo "  Ref:  $AIDE_REF"
 echo "  Dest: $PLUGIN_DIR"
 echo ""
 
+# Step 0: Verify DeepCode is installed
+REQUIRE_REGISTRATION=true
+if [ -f "workflows/plugins/__init__.py" ] || [ -f "workflows/plugins/base.py" ]; then
+    echo "[ok]    DeepCode plugin system detected"
+elif python3 -c "from workflows.plugins import InteractionPlugin" 2>/dev/null; then
+    echo "[ok]    DeepCode plugin system detected (installed package)"
+else
+    echo "[warn]  DeepCode plugin system not detected in this project."
+    echo "        AIDE plugins installed but need manual registration."
+    echo "        See: https://github.com/HKUDS/DeepCode"
+    REQUIRE_REGISTRATION=false
+fi
+echo ""
+
 # Step 1: Verify git access
 if ! git ls-remote "$AIDE_REPO" "$AIDE_REF" >/dev/null 2>&1; then
     echo "[error] Cannot access $AIDE_REPO"
@@ -60,19 +74,21 @@ PLUGIN_INIT="workflows/plugins/__init__.py"
 AIDE_LINES="from .aide import register_aide_plugins
 register_aide_plugins()"
 
-if [ -f "$PLUGIN_INIT" ]; then
-    if grep -q "register_aide_plugins" "$PLUGIN_INIT" 2>/dev/null; then
-        echo "[skip]  AIDE already registered in $PLUGIN_INIT"
-    else
-        echo "$AIDE_LINES" >> "$PLUGIN_INIT"
-        echo "[done]  Added AIDE registration to $PLUGIN_INIT"
+if [ "$REQUIRE_REGISTRATION" = true ]; then
+    if [ -f "$PLUGIN_INIT" ]; then
+        if grep -q "register_aide_plugins" "$PLUGIN_INIT" 2>/dev/null; then
+            echo "[skip]  AIDE already registered in $PLUGIN_INIT"
+        else
+            echo "$AIDE_LINES" >> "$PLUGIN_INIT"
+            echo "[done]  Added AIDE registration to $PLUGIN_INIT"
+        fi
     fi
 else
-    echo "[warn]  $PLUGIN_INIT not found — AIDE plugins must be registered manually."
-    echo "         Add to DeepCode startup:"
+    echo "[info]  Manual registration required. Add to DeepCode startup:"
     echo ""
-    echo "         from workflows.plugins.aide import register_aide_plugins"
-    echo "         register_aide_plugins()"
+    echo "        from workflows.plugins.aide import register_aide_plugins"
+    echo "        register_aide_plugins()"
+    echo ""
 fi
 
 # Step 6: Verify
