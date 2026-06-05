@@ -151,6 +151,8 @@ Semver with automatic enforcement via git hooks:
 
 ### Done
 
+### Done
+
 | Feature | Status |
 |---------|--------|
 | Orchestrator (deepcode-cli + CC) | Done |
