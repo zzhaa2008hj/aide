@@ -16,6 +16,17 @@ CodeWhale discovers skills from `.agents/skills/` and `~/.codewhale/skills/`. Th
 
 Invoke via `$aide "<description>"` or `/aide "<description>"`.
 
+### Slash command autocomplete
+
+For `/aide` to appear in the autocomplete popup when typing `/a`, install the user command:
+
+```bash
+mkdir -p ~/.codewhale/commands
+curl -sSL -o ~/.codewhale/commands/aide.md https://raw.githubusercontent.com/zzhaa2008hj/aide/develop/commands/aide.md
+```
+
+Now typing `/a` in the composer will show `aide` with description in the suggestion popup. The user command body triggers `$aide`, so the skill activates automatically.
+
 ## Differences from deepcode-cli
 
 | Aspect | deepcode-cli | CodeWhale |

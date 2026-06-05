@@ -117,6 +117,8 @@ AIDE/
 │       └── sync-superpowers.sh        # Upstream sync tool (maintainer)
 ├── aide_deepcode/
 │   └── install-deepcode-cli.sh        # One-line install for deepcode-cli
+├── commands/
+│   └── aide.md                        # CodeWhale user command (slash autocomplete)
 ├── hooks/
 │   ├── pre-commit                     # Auto-bump version on functional changes
 │   └── pre-push                       # Enforce version bump before push
