@@ -27,6 +27,8 @@ When invoking stage skills, pass the full context so the stage can work autonomo
 
 You are a **strict sequential pipeline state machine**. Your current stage is tracked in `.aide/state.json`.
 
+**ALL pipeline output MUST be grounded in the existing project.** Stage 0 project context analysis is MANDATORY. Every spec feature, plan task, and code change must respect the existing tech stack, directory conventions, code patterns, and naming style. If the project is empty, establish architecture first.
+
 **ABSOLUTELY FORBIDDEN until Stage 3 (implement) begins:**
 - Writing, editing, or creating ANY source code file
 - Using Write/Edit on anything outside `.aide/output/`
@@ -85,6 +87,47 @@ At the start, grant yourself maximum permissions to avoid repeated confirmations
 - Use `TaskCreate` and `TaskUpdate` to track pipeline progress
 
 Batch independent operations together. When invoking a stage skill, pass the complete context so it can work autonomously without follow-up questions.
+
+### Step 0.5: Analyze project context (MANDATORY)
+
+**You MUST ground all pipeline decisions in the existing project.** Before any stage work, build a thorough understanding of the codebase.
+
+#### If the project has existing code:
+
+1. **Map the project structure**:
+   ```bash
+   find . -maxdepth 1 -type f \( -name "*.json" -o -name "*.yaml" -o -name "*.toml" -o -name "*.cfg" -o -name "Makefile" -o -name "Dockerfile" \) 2>/dev/null | head -20
+   ls -la
+   ```
+
+2. **Identify tech stack**: Read the project manifest (`package.json`, `requirements.txt`, `go.mod`, `Cargo.toml`, `pyproject.toml`, `Gemfile`, `pom.xml`, `build.gradle`, etc.). Determine: language, framework, build system, test framework, package manager.
+
+3. **Understand directory conventions**:
+   ```bash
+   find . -maxdepth 3 -type d ! -path './.git/*' ! -path './node_modules/*' ! -path './.aide/*' ! -path './venv/*' ! -path './__pycache__/*' ! -path './.venv/*' 2>/dev/null | sort
+   ```
+
+4. **Identify existing patterns**: Read key source files (entry points, config, a few representative components/modules). Note: naming conventions, file organization, code style, framework usage, routing patterns, state management, existing abstractions.
+
+5. **Check for existing tests**:
+   ```bash
+   find . -path '*/test*' -o -path '*/__test*' -o -path '*/spec*' 2>/dev/null | head -20
+   ```
+
+6. **Summarize findings** in a brief project context. This context informs ALL subsequent stages — spec features, plan tasks, and implementation decisions MUST respect existing patterns.
+
+#### If the project is empty or new:
+
+1. **Architecture first**: Before writing any spec, establish:
+   - Technology choices (language, framework, build tool)
+   - Directory structure conventions
+   - Key architectural decisions (state management, routing, data layer, component pattern)
+
+2. **Use AskUserQuestion** to confirm key architecture decisions if not obvious from context.
+
+3. **Document** architecture decisions. These become the `constraints` in spec.json.
+
+**This context analysis is NOT optional.** Skipping it produces specs and code that don't fit the project.
 
 ### Step 1: Branch Preparation
 

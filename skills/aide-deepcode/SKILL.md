@@ -12,6 +12,8 @@ description: >-
 
 You are a **strict sequential pipeline state machine**. Your current stage is tracked in `.aide/state.json`.
 
+**ALL pipeline output MUST be grounded in the existing project.** Stage 0.2 (project context analysis) is MANDATORY. Every spec feature, plan task, and code change must respect the existing tech stack, directory conventions, code patterns, and naming style. If the project is empty, establish architecture first.
+
 **ABSOLUTELY FORBIDDEN until Stage 3 (implement) begins:**
 - Writing, editing, or creating ANY source code file
 - Using Write/Edit on anything outside `.aide/output/`
@@ -48,14 +50,62 @@ Each stage transition requires:
 
 Extract 3-5 keywords from the user's request, lowercase, hyphenate. Example: "Add AI chat drawer to the right side" → `ai-chat-drawer`.
 
-### 0.2 Record current branch
+### 0.2 Analyze project context (MANDATORY)
+
+**You MUST ground all pipeline decisions in the existing project.** Before any stage work, build a thorough understanding of the codebase.
+
+#### If the project has existing code:
+
+1. **Map the project structure**:
+   ```bash
+   find . -maxdepth 1 -type f -name "*.json" -o -name "*.yaml" -o -name "*.toml" -o -name "*.cfg" -o -name "Makefile" -o -name "Dockerfile" | head -20
+   ls -la
+   ```
+
+2. **Identify tech stack**: Read `package.json`, `requirements.txt`, `go.mod`, `Cargo.toml`, `pyproject.toml`, `Gemfile`, `pom.xml`, `build.gradle`, etc. Determine: language, framework, build system, test framework, package manager.
+
+3. **Understand directory conventions**:
+   ```bash
+   find . -maxdepth 3 -type d ! -path './.git/*' ! -path './node_modules/*' ! -path './.aide/*' ! -path './venv/*' ! -path './__pycache__/*' | sort
+   ```
+
+4. **Identify existing patterns**: Read key source files (entry points, config, a few representative components/modules). Note: naming conventions, file organization patterns, code style, framework usage, routing patterns, state management, existing abstractions.
+
+5. **Check for existing tests**:
+   ```bash
+   find . -path '*/test*' -o -path '*/__test*' -o -path '*/spec*' | head -20
+   ```
+
+6. **Summarize findings** in a brief project context memo. This memo informs ALL subsequent stages — spec, plan, and implement MUST respect existing patterns.
+
+#### If the project is empty or new:
+
+1. **Architecture first**: Before writing any spec, establish the project architecture:
+   - Technology choices (language, framework, build tool)
+   - Directory structure conventions
+   - Key architectural decisions (state management, routing, data layer, component pattern)
+
+2. **Use AskUserQuestion** to confirm architecture decisions:
+   ```
+   Question: "This is a new project. I'll establish the architecture. Which stack?"
+   Header: "Architecture"
+   Options:
+     - (infer from any existing config files)
+     - "Other (specify in feedback)"
+   ```
+
+3. **Document** architecture decisions before proceeding to Stage 1 spec. These become the `constraints` in spec.json.
+
+**This context analysis is NOT optional.** Skipping it produces specs and code that don't fit the project.
+
+### 0.3 Record current branch
 
 ```bash
 ORIG_BRANCH=$(git branch --show-current 2>/dev/null || echo "main")
 echo "ORIG_BRANCH=$ORIG_BRANCH"
 ```
 
-### 0.3 Branch decision
+### 0.4 Branch decision
 
 Use `AskUserQuestion` with `required: true`:
 
@@ -70,7 +120,7 @@ Options:
 - If user selects a branch name: `git checkout -b aide/<slug> <selected-branch>`
 - If `skip`: stay on `ORIG_BRANCH`, no branch creation
 
-### 0.4 Initialize AIDE directories and state
+### 0.5 Initialize AIDE directories and state
 
 ```bash
 mkdir -p .aide/output/1-spec .aide/output/2-plan .aide/output/3-implement .aide/output/4-test
