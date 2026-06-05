@@ -41,10 +41,16 @@ cd "$TMP_DIR"
 git init -q
 git remote add origin "$AIDE_REPO" 2>/dev/null || git remote set-url origin "$AIDE_REPO"
 git sparse-checkout init --cone >/dev/null 2>&1
-git sparse-checkout set skills aide-core/schemas >/dev/null 2>&1
+git sparse-checkout set skills aide-core/schemas .claude-plugin/plugin.json >/dev/null 2>&1
 git fetch origin "$AIDE_REF" --depth 1 -q 2>/dev/null || git fetch origin "$AIDE_REF" --depth 1
 git checkout FETCH_HEAD >/dev/null 2>&1
-cd - > /dev/null
+cd - > /dev/null 2>&1 || true
+
+	if [ ! -d "$TMP_DIR/skills" ]; then
+	    echo "[error] Installation failed — skills/ directory not found in repo."
+	    echo "        The repository structure may have changed."
+	    exit 1
+	fi
 
 # Step 3: Install only deepcode-cli compatible skills
 mkdir -p "$SKILLS_DIR"
@@ -91,6 +97,16 @@ if [ -d "$SCHEMAS_SRC" ]; then
     echo ""
     echo "  Schemas: $(ls "$SCHEMAS_DST"/*.json 2>/dev/null | wc -l) copied to $SCHEMAS_DST"
 fi
+
+# Step 4b: Record installed version from plugin.json
+VERSION=$(python3 -c "
+import json
+data = json.load(open('$TMP_DIR/.claude-plugin/plugin.json'))
+print(data['version'])
+" 2>/dev/null || echo "unknown")
+echo "$VERSION" > .aide/version
+echo ""
+echo "  Version: $VERSION written to .aide/version"
 
 echo ""
 echo "=== Installation complete ==="

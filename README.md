@@ -47,7 +47,21 @@ Validates branch, reads `.aide/state.json` to find where you left off, skips com
 /aide-update
 ```
 
-Runs `claude plugin marketplace update aide` then `claude plugin update aide@aide --scope project`. Safe to run mid-pipeline.
+This runs `claude plugin marketplace update aide` then `claude plugin update aide@aide --scope project`. Safe to run mid-pipeline.
+
+### deepcode-cli: Install and Update
+
+For projects using deepcode-cli instead of Claude Code:
+
+```bash
+# Install (from project root)
+curl -sSL https://raw.githubusercontent.com/zzhaa2008hj/aide/master/aide_deepcode/install-deepcode-cli.sh | bash
+
+# Update to latest version
+bash update-deepcode-cli.sh
+```
+
+Installs skills to `.agents/skills/` and schemas to `.aide/schemas/`. The update script compares `.aide/version` against the repo's latest version and applies updates when available. Supports `AIDE_REPO` and `AIDE_REF` env vars for custom sources.
 
 ### Customize gates
 
@@ -158,6 +172,9 @@ The pre-commit hook automatically bumps `plugin.json` + `marketplace.json` when 
 | Pipeline discipline guards (state machine enforcement) | Done |
 | Shared pipeline protocol (deduplicated orchestrators) | Done |
 | Version management (pre-commit + pre-push hooks) | Done |
+| Test stage (`aide-test` skill) | Phase 3 |
+| deepcode-cli install (`install-deepcode-cli.sh`) | Done |
+| deepcode-cli update (`update-deepcode-cli.sh`) | Done |
 
 ### Planned / TODO
 
