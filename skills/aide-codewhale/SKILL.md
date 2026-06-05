@@ -53,21 +53,20 @@ Each stage transition requires:
 
 If `.aide/state.json` exists at startup with `completed_stages`, respect it — do NOT re-run completed stages.
 
-## Pipeline Discipline
-
-**ABSOLUTELY FORBIDDEN until Stage 3 (implement) begins:**
-- Writing, editing, or creating ANY source code file
-- Writing/editing anything outside `.aide/output/`
-- Running build commands, package installs, or similar
-
-**The ONLY files you may create before Stage 3:**
-- `.aide/state.json`
-- `.aide/output/1-spec/*-spec.md` and `*-spec.json`
-- `.aide/output/2-plan/*-plan.md` and `*-plan.json`
-
-Violating these rules breaks resumability and leaves incomplete artifacts.
-
 ## Stage 0: Initialize
+
+### 0.0 Initialize progress checklist
+
+Use `checklist_write` to create a visible progress tracker:
+```
+checklist_write([
+  {id: "0", label: "Initialize", checked: false},
+  {id: "1", label: "Spec", checked: false},
+  {id: "2", label: "Plan", checked: false},
+  {id: "3", label: "Implement", checked: false},
+  {id: "4", label: "Test", checked: false}
+])
+```
 
 ### 0.1 Parse request and generate slug
 
@@ -183,6 +182,17 @@ After initialization, the state file should contain:
 }
 ```
 
+**Progress**:
+```
+checklist_write([
+  {id: "0", label: "Initialize", checked: true},
+  {id: "1", label: "Spec", checked: false},
+  {id: "2", label: "Plan", checked: false},
+  {id: "3", label: "Implement", checked: false},
+  {id: "4", label: "Test", checked: false}
+])
+```
+
 ---
 
 ## Stage 1: spec
@@ -246,6 +256,17 @@ Update `.aide/state.json`:
   "test_retries": 0,
   "last_updated": "<ISO timestamp>"
 }
+```
+
+**Progress**:
+```
+checklist_write([
+  {id: "0", label: "Initialize", checked: true},
+  {id: "1", label: "Spec", checked: true},
+  {id: "2", label: "Plan", checked: false},
+  {id: "3", label: "Implement", checked: false},
+  {id: "4", label: "Test", checked: false}
+])
 ```
 
 ---
@@ -313,6 +334,17 @@ Update `.aide/state.json`:
 }
 ```
 
+**Progress**:
+```
+checklist_write([
+  {id: "0", label: "Initialize", checked: true},
+  {id: "1", label: "Spec", checked: true},
+  {id: "2", label: "Plan", checked: true},
+  {id: "3", label: "Implement", checked: false},
+  {id: "4", label: "Test", checked: false}
+])
+```
+
 ---
 
 ## Stage 3: implement
@@ -339,12 +371,16 @@ Parse the `tasks` array. Build two structures:
 
 1. From `ready`, select up to 3 tasks that are mutually independent (no task in the batch depends on any other task in the batch)
 2. Dispatch them in parallel using `agent_open`
-3. Wait for all in the batch to complete via notification sentinels
+3. Wait for `<codewhale:subagent.done>` sentinels. When a sentinel arrives:
+   a. Read the **summary line** that precedes the sentinel (CodeWhale injects this automatically)
+   b. If summary indicates **DONE**: mark task complete, no further reading needed
+   c. If summary indicates **BLOCKED**: use `agent_eval` + `handle_read` to fetch the blocker reason
+   d. If summary is **ambiguous**: use `handle_read` with a line-range slice for clarification
 4. For each completed task: add to `completed`, move dependent tasks from `waiting` to `ready`
 5. If a task fails/errors: mark as `blocked` with reason, block tasks that depend on it
 6. Repeat until `ready` is empty or all remaining are blocked
 
-**CodeWhale source basis**: `agent_open` is non-blocking (returns immediately). The runtime injects a `<codewhale:subagent.done>` sentinel into the transcript when a sub-agent finishes. The human-readable summary precedes the sentinel. (CodeWhale README, Sub-agents section)
+**CodeWhale source basis**: `agent_open` is non-blocking (returns immediately). The runtime injects a `<codewhale:subagent.done>` sentinel with a human-readable summary line. `agent_eval` provides a `transcript_handle`, and `handle_read` supports slices, line ranges, or JSONPath projections for bounded retrieval — keeping the parent context lean. (CodeWhale README, Sub-agents section)
 
 **Per-task sub-agent prompt template**:
 ```
@@ -434,6 +470,17 @@ Update `.aide/state.json`:
   "test_retries": 0,
   "last_updated": "<ISO timestamp>"
 }
+```
+
+**Progress**:
+```
+checklist_write([
+  {id: "0", label: "Initialize", checked: true},
+  {id: "1", label: "Spec", checked: true},
+  {id: "2", label: "Plan", checked: true},
+  {id: "3", label: "Implement", checked: true},
+  {id: "4", label: "Test", checked: false}
+])
 ```
 
 ---
@@ -527,6 +574,17 @@ Update `.aide/state.json`:
   "completed_stages": ["spec", "plan", "implement", "test"],
   "last_updated": "<ISO timestamp>"
 }
+```
+
+**Progress**:
+```
+checklist_write([
+  {id: "0", label: "Initialize", checked: true},
+  {id: "1", label: "Spec", checked: true},
+  {id: "2", label: "Plan", checked: true},
+  {id: "3", label: "Implement", checked: true},
+  {id: "4", label: "Test", checked: true}
+])
 ```
 
 ---
