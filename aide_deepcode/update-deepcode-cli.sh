@@ -41,7 +41,7 @@ fi
 echo "        Local version: $LOCAL_VERSION"
 
 # Step 2: Fetch latest version from repo
-PLUGIN_JSON_URL=$(echo "$AIDE_REPO" | sed 's|git@github.com:|https://raw.githubusercontent.com/|' | sed 's|\.git$||')/$AIDE_REF/.claude-plugin/plugin.json
+PLUGIN_JSON_URL=$(echo "$AIDE_REPO" | sed -e 's|git@github.com:|https://raw.githubusercontent.com/|' -e 's|https://github.com/|https://raw.githubusercontent.com/|' -e 's|\.git$||')/$AIDE_REF/.claude-plugin/plugin.json
 
 REMOTE_VERSION=$(curl -sSL "$PLUGIN_JSON_URL" | python3 -c "
 import json, sys
@@ -60,10 +60,11 @@ echo "        Remote version: $REMOTE_VERSION"
 version_greater() {
     # Returns 0 (true) if $1 > $2, 1 (false) otherwise
     python3 -c "
-a = tuple(map(int, '$1'.split('.')))
-b = tuple(map(int, '$2'.split('.')))
+import sys
+a = tuple(map(int, sys.argv[1].split('.')))
+b = tuple(map(int, sys.argv[2].split('.')))
 exit(0 if a > b else 1)
-"
+" "$1" "$2"
 }
 
 if [ "$LOCAL_VERSION" = "$REMOTE_VERSION" ]; then
@@ -85,7 +86,7 @@ echo ""
 
 # Step 4: Update via sparse checkout
 TMP_DIR=$(mktemp -d)
-trap "rm -rf $TMP_DIR" EXIT
+trap 'rm -rf -- "$TMP_DIR"' EXIT INT TERM
 
 echo "[info]  Fetching skills/ and schemas from $AIDE_REPO ($AIDE_REF)..."
 
