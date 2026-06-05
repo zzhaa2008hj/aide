@@ -97,7 +97,7 @@ git sparse-checkout init --cone >/dev/null 2>&1
 git sparse-checkout set skills aide-core/schemas >/dev/null 2>&1
 git fetch origin "$AIDE_REF" --depth 1 -q 2>/dev/null || git fetch origin "$AIDE_REF" --depth 1
 git checkout FETCH_HEAD >/dev/null 2>&1
-cd - > /dev/null
+cd - > /dev/null 2>&1 || true
 
 if [ ! -d "$TMP_DIR/skills" ]; then
     echo "[error] Update failed. Your existing install is unchanged."
@@ -105,6 +105,7 @@ if [ ! -d "$TMP_DIR/skills" ]; then
 fi
 
 # Step 4a: Update skills
+# NOTE: This mapping must stay in sync with install-deepcode-cli.sh
 declare -A SKILL_MAP=(
     ["aide-deepcode"]="aide"
     ["aide-spec"]="aide-spec"
