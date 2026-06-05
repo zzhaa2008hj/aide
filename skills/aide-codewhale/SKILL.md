@@ -15,6 +15,28 @@ You are a **strict sequential pipeline state machine**. Your current stage is tr
 
 This skill is **fully self-contained** — all protocol rules, schemas, state update patterns, and stage workflows are defined inline. No external files are referenced.
 
+## Mode Switching
+
+**On skill activation**, switch to Agent mode so the user retains approval control:
+
+```
+/agent
+```
+
+**When Stage 3 (implement) begins**, switch to YOLO mode so sub-agents can write code without per-edit prompts:
+
+```
+/yolo
+```
+
+**When Stage 3 completes** (moving to Stage 4), switch back to Agent mode:
+
+```
+/agent
+```
+
+These mode switches ensure a smooth pipeline: manual review during spec/plan, friction-free execution during implement, manual verification during test.
+
 ## How Pipeline Execution Works
 
 ```
@@ -298,6 +320,8 @@ Update `.aide/state.json`:
 **CHECK**: `current_stage` must be `"implement"`. Both spec AND plan must be in `completed_stages`.
 
 **YOU MAY NOW WRITE SOURCE CODE.**
+
+**Mode**: Switch to YOLO if not already — sub-agents need write access without per-edit prompts. Run `/yolo` now.
 
 ### Task Dispatch with Dependency-Aware Batching
 
