@@ -4,6 +4,7 @@ Transforms user requirements into a structured specification.
 """
 
 import json
+import sys
 from pathlib import Path
 from typing import Any, Dict
 
@@ -71,7 +72,12 @@ Output a JSON object with these fields:
 Return ONLY valid JSON."""
 
         result = await provider.generate(prompt)
-        return json.loads(result)
+        try:
+            return json.loads(result)
+        except json.JSONDecodeError:
+            print("ERROR: aide_spec_plugin: LLM returned non-JSON for spec generation. Falling back to empty spec.", file=sys.stderr)
+            print(f"ERROR: Raw output (first 500 chars): {result[:500]}", file=sys.stderr)
+            return {"title": "Spec Generation Failed", "summary": "LLM output was not valid JSON. Manual intervention required.", "features": []}
 
     async def process_response(self, response: InteractionResponse, context: Dict[str, Any]) -> Dict[str, Any]:
         if response.action == "n":
