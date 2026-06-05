@@ -240,6 +240,25 @@ Trace the bug from its symptom to its root cause:
 
 Be thorough but focused. Do NOT get sidetracked by unrelated code.
 
+### Step 1.2.5: DeepCode Assisted Analysis (MANDATORY)
+
+**Goal**: Augment manual tracing with your native static analysis capabilities. You are running inside deepcode-cli — use its built-in analysis to surface issues manual search may miss (null risks, resource leaks, concurrency bugs, control flow anomalies).
+
+Based on the target files identified in Step 1.2, perform a focused analysis with these bug-hunting lenses:
+
+- **Crash risks**: Null/nil dereferences, out-of-bounds access, division by zero, stack overflow paths
+- **Data flow anomalies**: Uninitialized variables, type mismatches, unexpected nil/empty propagation
+- **Control flow bugs**: Missing branches, unreachable code, incorrect loop conditions, missing return/break
+- **Concurrency issues**: Race conditions, missing synchronization, double-close patterns
+- **Resource management**: Leaks (file handles, connections, memory), missing cleanup in error paths
+
+For each finding, cross-reference with the bug symptoms from Step 1.1:
+- **Direct match** (finding explains the exact bug) → confirm via code reading, this is likely the root cause
+- **Suspicious proximity** (finding in same file/function, different issue) → note in scope fence, may need attention
+- **Unrelated** → ignore, don't let it expand scope
+
+Record relevant findings in the analyze report under a **DeepCode findings** section. Findings are **advisory** — they inform the diagnosis but do not replace manual tracing. The root cause must still be verified by reading and understanding the code.
+
 ### Step 1.3: Determine scope fence
 
 List EVERY file that needs modification to fix the bug. This is your **scope fence** — the binding constraint on Stage 2.
@@ -273,6 +292,8 @@ Write the analysis to `.aide/fix/output/1-analyze/{date}-{slug}-analyze.md`:
 - `path/to/file.ext` — <one sentence describing the change needed per file>
 
 **Risk:** low | medium | high
+
+**DeepCode CLI:** <N> issues found in target area, <M> potentially related to this bug
 
 **Reasoning:** <1-2 sentences explaining the diagnosis and why this is the minimal fix>
 ```

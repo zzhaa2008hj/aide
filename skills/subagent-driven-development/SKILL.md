@@ -74,7 +74,8 @@ digraph process {
     "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" -> "Spec reviewer subagent confirms code matches spec?";
     "Spec reviewer subagent confirms code matches spec?" -> "Implementer subagent fixes spec gaps" [label="no"];
     "Implementer subagent fixes spec gaps" -> "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" [label="re-review"];
-    "Spec reviewer subagent confirms code matches spec?" -> "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [label="yes"];
+    "Spec reviewer subagent confirms code matches spec?" -> "Perform DeepCode quality scan on changed files" [label="yes"];
+    "Perform DeepCode quality scan on changed files" -> "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)";
     "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" -> "Code quality reviewer subagent approves?";
     "Code quality reviewer subagent approves?" -> "Implementer subagent fixes quality issues" [label="no"];
     "Implementer subagent fixes quality issues" -> "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [label="re-review"];
@@ -123,7 +124,13 @@ Implementer subagents report one of four statuses. Handle each appropriately:
 
 - `./implementer-prompt.md` - Dispatch implementer subagent
 - `./spec-reviewer-prompt.md` - Dispatch spec compliance reviewer subagent
-- `./code-quality-reviewer-prompt.md` - Dispatch code quality reviewer subagent
+- `./code-quality-reviewer-prompt.md` - Dispatch code quality reviewer subagent (includes DeepCode quality scan step)
+
+### DeepCode Integration
+
+Before dispatching the code quality reviewer, perform a focused quality scan on the task's changed files using your native analysis capabilities. This gives the reviewer concrete issues to verify rather than starting from scratch. The scan findings are passed as `{DEEPCODE_RESULTS}` to the reviewer prompt.
+
+See `./code-quality-reviewer-prompt.md` for the full pre-review procedure. Quality review is always required regardless of whether a pre-scan was performed.
 
 ## Example Workflow
 
@@ -181,8 +188,12 @@ Implementer: Removed --json flag, added progress reporting
 [Spec reviewer reviews again]
 Spec reviewer: ✅ Spec compliant now
 
-[Dispatch code quality reviewer]
-Code reviewer: Strengths: Solid. Issues (Important): Magic number (100)
+[Perform DeepCode quality scan on changed files]
+Pre-review: 3 findings (0 critical, 2 warning, 1 info)
+
+[Dispatch code quality reviewer with pre-review findings]
+Code reviewer: Strengths: Solid. Pre-review warnings verified — 2 real issues.
+  Issues (Important): Magic number (100), missing null check (Pre-review verified)
 
 [Implementer fixes]
 Implementer: Extracted PROGRESS_INTERVAL constant

@@ -29,7 +29,24 @@ BASE_SHA=$(git rev-parse HEAD~1)  # or origin/main
 HEAD_SHA=$(git rev-parse HEAD)
 ```
 
-**2. Dispatch code reviewer subagent:**
+**2. Perform DeepCode analysis on the diff (MANDATORY):**
+
+Before dispatching the reviewer, use your native analysis capabilities (you are running inside deepcode-cli) to scan the diff. This gives the reviewer concrete issues to verify, rather than starting from scratch.
+
+```bash
+git diff --stat ${BASE_SHA}..${HEAD_SHA}
+git diff ${BASE_SHA}..${HEAD_SHA}
+```
+
+Read the full diff. Then perform a focused pre-review scan covering:
+- **Obvious bugs**: Logic errors, incorrect assumptions, missing edge cases visible in the diff
+- **Security concerns**: New inputs without validation, exposed internals, auth gaps
+- **Structural issues**: New files that don't follow project conventions, missing error handling
+- **Test gaps**: Changed code without corresponding test changes
+
+Compile your findings into a structured summary. This becomes the `{DEEPCODE_RESULTS}` placeholder in the reviewer template. The reviewer will verify each finding and add their own.
+
+**3. Dispatch code reviewer subagent:**
 
 Use Task tool with `general-purpose` type, fill template at `code-reviewer.md`
 

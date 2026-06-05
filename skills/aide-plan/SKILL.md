@@ -82,6 +82,24 @@ cat .aide/output/1-spec/spec.json
 
 Parse the features array. Count features — report: "Decomposing N features into implementation tasks..."
 
+### Step 1.5: Project Structure Analysis (MANDATORY)
+
+**Goal**: Understand the existing project structure before deciding where new files should go and which existing files need modification. This produces accurate `files_to_touch` paths grounded in reality, not guesswork.
+
+Use your native code analysis capabilities to survey the project:
+
+1. **Discover source layout**: Identify the primary source directories (`src/`, `lib/`, `app/`, etc.), test directories (`tests/`, `spec/`, `__tests__/`), and configuration files. Note the language, framework, and build system.
+
+2. **Map module boundaries**: Identify logical modules/packages and their dependency relationships. Note which modules are foundational (depended on by many others) vs. leaf modules.
+
+3. **Learn conventions**: Identify file naming patterns, directory nesting conventions, test file placement rules, and import/style patterns used consistently across the codebase.
+
+**Apply these insights in Step 2** when generating `files_to_touch`:
+- Place new files alongside similar existing files following the same directory conventions
+- Respect module boundaries — avoid introducing circular dependencies
+- Match test file placement to the project's convention (co-located, parallel `tests/` tree, etc.)
+- Flag modules that multiple features will touch for the cross-feature check in Step 3
+
 ### Step 2: Decompose each feature
 
 For each feature, apply the decomposition rules above. Write each task as a draft object in memory. Track the global task counter (T001, T002...). For each task, write a detailed `description` field that gives the subagent complete context to implement the task independently — include what to build, where to put it, what patterns to follow, and how it connects to other tasks.
