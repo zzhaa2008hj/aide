@@ -217,11 +217,64 @@ Write `.aide/output/3-implement/<date>-<slug>-implement.json`:
   "task_results": [
     {"task_id": "T001", "status": "done"},
     {"task_id": "T002", "status": "done"}
-  ]
+  ],
+  "deepcode_analysis": {
+    "files_analyzed": [],
+    "issues": []
+  }
 }
 ```
 
 Use the same date-slug pattern as previous stages for the filename.
+
+### Step 3.4.5: DeepCode Analysis (MANDATORY)
+
+**Goal**: Leverage your native code analysis capabilities to catch issues manual review may have missed. You are running inside deepcode-cli — use its built-in static analysis to find bugs, security vulnerabilities, code smells, and anti-patterns.
+
+Read every file listed in `changed_files` from `implement.json`. For each file, perform a thorough static analysis covering:
+
+- **Correctness**: Logic errors, off-by-one, null/undefined risks, race conditions, resource leaks
+- **Security**: Injection risks, missing input validation, insecure defaults, exposed secrets
+- **Code quality**: Dead code, overly complex functions, duplicated logic, missing error handling
+- **Style & convention**: Naming consistency, file organization, pattern adherence with existing codebase
+
+Record your findings in the `deepcode_analysis` field of `implement.json`:
+
+```json
+{
+  "deepcode_analysis": {
+    "files_analyzed": ["src/foo.py", "src/bar.ts"],
+    "issues": [
+      {
+        "severity": "critical|warning|info",
+        "file": "src/foo.py",
+        "line": 42,
+        "message": "Potential null dereference — user.name accessed without null check",
+        "category": "correctness|security|quality|style"
+      }
+    ]
+  }
+}
+```
+
+Report findings concisely — focus on actionable issues, not noise. Flag critical issues prominently but do NOT block the pipeline here — the test stage will evaluate their impact on the verdict.
+
+### Report
+
+Present the implement stage summary:
+
+```
+[aide] Implement stage complete:
+  ✓ T001 — <title>
+  ✗ T002 — <title> (blocked: <reason>)
+  ✓ T003 — <title>
+
+  N/M tasks completed, K blocked.
+  Changed: <file list>
+  DeepCode: <N> issues (C critical, W warning, I info)
+
+  To fix blocked tasks, update plan.json and run /aide-continue
+```
 
 ### Gate
 
@@ -246,6 +299,40 @@ Follow **Pattern A — Basic Stage Transition** in `aide-core/pipeline-protocol.
 This stage produces:
 - `.aide/output/4-test/<date>-<slug>-test-report.md`
 - `.aide/output/4-test/<date>-<slug>-test-report.json`
+
+### Step 4.2.5: DeepCode Verification (MANDATORY)
+
+**Goal**: Run a final comprehensive static analysis on the complete change set. This catches issues that tests alone may miss — code smells, security gaps, and architectural problems. Since you are running inside deepcode-cli, use your native analysis capabilities.
+
+Read all `changed_files` from `.aide/output/3-implement/implement.json`. Perform a deep verification pass with these specific lenses:
+
+- **Bug detection**: Look for logic errors, edge cases not covered by tests, incorrect assumptions
+- **Security audit**: Injection vectors, missing auth checks, data exposure risks
+- **Regression risk**: Could these changes break existing functionality? Trace callers and dependents.
+- **Test quality**: Are the tests meaningful (real assertions, edge cases) or superficial (mock-only, happy-path)?
+
+Record findings in `.aide/output/4-test/test-report.json` under a `deepcode_verification` field:
+
+```json
+{
+  "deepcode_verification": {
+    "critical": 0,
+    "warning": 3,
+    "info": 5,
+    "issues": [
+      {
+        "severity": "warning",
+        "file": "src/api/users.py",
+        "line": 88,
+        "message": "Missing rate limiting on user creation endpoint",
+        "category": "security"
+      }
+    ]
+  }
+}
+```
+
+**Verdict influence**: If critical issues are found, downgrade a `pass` verdict to `fail`. Warnings and info-level findings do NOT change the verdict — they are informational for the user.
 
 ### Retry Logic
 

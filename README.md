@@ -71,6 +71,25 @@ Edit `.aide/config.yaml` to change gate types per stage:
 
 The implement stage reads `plan.json`, resolves task dependencies via topological sort, and dispatches each task through Superpowers' `subagent-driven-development` pattern (implement → spec review → quality review). Up to 3 independent tasks run in parallel.
 
+### Fix Pipeline (`/aide-fix`)
+
+A lightweight alternative for bug fixes and small optimizations:
+
+| Order | Stage     | Description                         |
+|-------|-----------|-------------------------------------|
+| 1     | analyze   | Root cause → scope fence            |
+| 2     | implement | Scope-fenced code changes           |
+| 3     | test      | Verify + auto-retry (max 2)        |
+
+Uses independent state tracking (`.aide/fix-state.json`), branch prefix (`aide-fix/`), and output directory (`.aide/fix/output/`). Supports resume via state file detection. Invoke via `/aide-fix "<bug description>"`.
+
+### DeepCode Integration
+
+Both orchestrators include mandatory DeepCode analysis stages:
+
+- **Stage 3 (implement)**: DeepCode Analysis scans all changed files for correctness, security, code quality, and style issues
+- **Stage 4 (test)**: DeepCode Verification performs final comprehensive analysis — critical findings downgrade the test verdict from pass to fail
+
 ## Project Structure
 
 ```
@@ -78,6 +97,7 @@ AIDE/
 ├── skills/
 │   ├── aide/                          # Pipeline orchestrator (Claude Code)
 │   ├── aide-deepcode/                 # Pipeline orchestrator (deepcode-cli)
+│   ├── aide-fix/                      # Bug-fix pipeline (analyze → implement → test)
 │   ├── aide-spec/                     # Stage 1: Requirements → Spec
 │   ├── aide-plan/                     # Stage 2: Spec → Plan
 │   ├── aide-test/                     # Stage 4: Verification → Test report
@@ -162,6 +182,10 @@ The pre-commit hook automatically bumps `plugin.json` + `marketplace.json` when 
 | Pipeline discipline guards (state machine enforcement) | Done |
 | Shared pipeline protocol (deduplicated orchestrators) | Done |
 | Version management (pre-commit + pre-push hooks) | Done |
+| Fix pipeline (`/aide-fix`, analyze→implement→test) | Done |
+| Fix pipeline resume (state file detection) | Done |
+| DeepCode Analysis in implement stage (both orchestrators) | Done |
+| DeepCode Verification in test stage (both orchestrators) | Done |
 
 ### Planned / TODO
 

@@ -11,29 +11,34 @@ description: >-
 
 You are the **rapid bug-fix orchestrator**. Your job is to diagnose and fix bugs quickly through a strict three-stage sequential pipeline: analyze root cause, implement minimal changes, verify with tests. You handle every stage directly — no sub-skills, no parallel task dispatch.
 
-## Permissions
+## ⛔ PIPELINE DISCIPLINE — READ THIS BEFORE DOING ANYTHING ELSE
 
-To minimize interruptions during pipeline execution, request these permissions up front:
+You are a **strict 3-stage sequential pipeline state machine**. State is tracked in `.aide/fix-state.json`.
 
-- **Bash**: Run commands, manage git, install dependencies, run tests
-- **Write/Edit**: Create and modify project files
-- **Read**: Read any file in the project
-- **Skill**: Invoke aide-test for test verification if needed
+### RESUME: Check state file FIRST
 
-Batch independent operations to reduce round-trips.
+**BEFORE any analysis or code changes**, check if `.aide/fix-state.json` exists:
 
-## CRITICAL — Pipeline Discipline
+```bash
+cat .aide/fix-state.json 2>/dev/null || echo "NO_STATE_FILE"
+```
 
-You are a **strict sequential state machine**. Your current stage is tracked in `.aide/fix-state.json`.
+- **If state file EXISTS**: You are RESUMING a previous run.
+  1. Read `current_stage` and `completed_stages`
+  2. Jump directly to `current_stage` — do NOT re-run completed stages
+  3. Announce: `"Resuming aide-fix pipeline from Stage <N> (<current_stage>). Completed: <list>"`
+  4. Skip Startup Sequence steps that have already been done (branch creation, state init, dir creation)
 
-**Allowed file operations by stage:**
+- **If state file DOES NOT EXIST**: Fresh start. Run the full Startup Sequence, then execute all stages.
+
+### Allowed file operations by stage
 
 - **Before Stage 1 (Startup)**: May only create `.aide/fix-state.json` and `.aide/fix/output/` directory structure
 - **Stage 1 (Analyze)**: May create `.aide/fix-state.json` updates and `.aide/fix/output/1-analyze/*-analyze.md`. NO source code modifications.
 - **Stage 2 (Implement)**: May write source code, but ONLY files listed in the `scope_fence` field of `fix-state.json`. Any needed change outside the scope fence requires explicit user approval.
 - **Stage 3 (Test)**: May re-write files within the scope fence during retry loop. NO scope expansion without user approval.
 
-**Stage transition rules:**
+### Stage transition rules
 
 1. Complete the current stage fully before proceeding
 2. Validate output artifacts exist before transitioning
@@ -41,9 +46,7 @@ You are a **strict sequential state machine**. Your current stage is tracked in 
 4. Update `.aide/fix-state.json` on each transition
 5. Commit pipeline artifacts after gate passes
 
-If `.aide/fix-state.json` exists at startup with `completed_stages`, respect it — do NOT re-run completed stages.
-
-## Core Principle
+### Core Principle
 
 **Orchestrate, do not over-engineer.** Fix the bug with minimal changes. No refactoring, no reformatting, no defensive additions unrelated to the bug. Every line changed must be directly necessary for the fix. When the bug condition does not hold, patched code must behave identically to original.
 
@@ -218,7 +221,10 @@ Stages: analyze -> implement -> test
 
 **Goal**: Identify the root cause of the bug, determine the exact set of files that need modification (scope fence), and produce a concise analysis report.
 
-**🔴 CHECK**: Read `.aide/fix-state.json`. `current_stage` must be `"analyze"`. If not, STOP and report state corruption.
+**🔴 STAGE GATE — Read `.aide/fix-state.json` before proceeding:**
+- If `"analyze"` is in `completed_stages`: SKIP this stage. Announce "Stage 1 (Analyze) already completed, skipping to Stage 2." Go to Stage 2.
+- If `current_stage` is NOT `"analyze"` and stage not completed: STOP and report state corruption.
+- Otherwise: `current_stage` is `"analyze"` → execute this stage.
 
 ### Step 1.1: Understand the issue
 
@@ -360,7 +366,10 @@ with open('.aide/fix-state.json', 'w') as f:
 Then announce:
 
 ```
-Stage 1 (Analyze) complete. Proceeding to implementation.
+✅ Stage 1 (Analyze) complete. State saved to .aide/fix-state.json.
+   Completed: analyze | Next: implement
+   Scope fence: <N> files
+   Risk: low | medium | high
 ```
 
 ---
@@ -369,7 +378,11 @@ Stage 1 (Analyze) complete. Proceeding to implementation.
 
 **Goal**: Apply minimal code changes within the scope fence to fix the bug.
 
-**🔴 CHECK**: Read `.aide/fix-state.json`. `current_stage` must be `"implement"`. `"analyze"` must be in `completed_stages`. If not, STOP and report state corruption.
+**🔴 STAGE GATE — Read `.aide/fix-state.json` before proceeding:**
+- If `"implement"` is in `completed_stages`: SKIP this stage. Announce "Stage 2 (Implement) already completed, skipping to Stage 3." Go to Stage 3.
+- If `current_stage` is NOT `"implement"` and stage not completed: STOP and report state corruption.
+- Verify `"analyze"` is in `completed_stages`. If not, STOP — go back to Stage 1.
+- Otherwise: `current_stage` is `"implement"` → execute this stage.
 
 **🟢 YOU MAY NOW WRITE SOURCE CODE.** The restriction is lifted because analysis is complete and the scope fence is established.
 
@@ -445,7 +458,10 @@ with open('.aide/fix-state.json', 'w') as f:
 Then announce:
 
 ```
-Stage 2 (Implement) complete. Proceeding to test verification.
+✅ Stage 2 (Implement) complete. State saved to .aide/fix-state.json.
+   Completed: analyze, implement | Next: test
+   Changes: +N/-M lines across K files
+   Scope fence compliance: Verified
 ```
 
 ---
@@ -454,7 +470,11 @@ Stage 2 (Implement) complete. Proceeding to test verification.
 
 **Goal**: Run the project's tests, auto-retry on failure (max 2 retries), and get final user confirmation.
 
-**🔴 CHECK**: Read `.aide/fix-state.json`. `current_stage` must be `"test"`. `"implement"` must be in `completed_stages`. If not, STOP and report state corruption.
+**🔴 STAGE GATE — Read `.aide/fix-state.json` before proceeding:**
+- If `"test"` is in `completed_stages`: SKIP this stage. Announce "Stage 3 (Test) already completed. Pipeline was already finished." Go to Pipeline Complete.
+- If `current_stage` is NOT `"test"` and stage not completed: STOP and report state corruption.
+- Verify `"implement"` is in `completed_stages`. If not, STOP — go back to Stage 2.
+- Otherwise: `current_stage` is `"test"` → execute this stage.
 
 ### Step 3.1: Determine test command
 
@@ -642,6 +662,9 @@ If the pipeline was aborted early, show what was completed and note:
 ```
 Resume with `/aide-fix` on branch <current-branch>. The state file at
 .aide/fix-state.json will detect completed stages and skip them.
+
+  Completed stages: <list>
+  Current stage: <current_stage>
 ```
 
 ## Important Guidelines
