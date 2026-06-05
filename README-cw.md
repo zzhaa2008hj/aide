@@ -6,33 +6,24 @@ AIDE is also available as a [CodeWhale](https://github.com/Hmbown/CodeWhale) ski
 
 ## Install
 
-In a CodeWhale session, run:
-
-```
-/skill install github:zzhaa2008hj/aide
-```
-
-CodeWhale discovers skills from `.agents/skills/` and `~/.codewhale/skills/`. The orchestrator is self-contained — no additional stage skills needed.
-
-Invoke via `$aide "<description>"` or `/aide "<description>"`.
-
-### Slash command autocomplete
-
-For `/aide` to appear in the autocomplete popup when typing `/a`, install the user command **in your project**:
+One command:
 
 ```bash
-mkdir -p .codewhale/commands
-curl -sSL -o .codewhale/commands/aide.md https://raw.githubusercontent.com/zzhaa2008hj/aide/develop/commands/aide.md
+curl -sSL https://raw.githubusercontent.com/zzhaa2008hj/aide/develop/skills/aide-codewhale/install.sh | bash
 ```
 
-Now typing `/a` in the composer will show `aide` with description in the suggestion popup. The user command body triggers `$aide`, so the skill activates automatically.
+This script:
+1. Sets up `.codewhale/commands/aide.md` — enables `/aide` slash autocomplete
+2. Prints the `/skill install` command to run in CodeWhale
+
+After the script, run the printed command in your CodeWhale session to install the skill. Then invoke via `/aide "<description>"`. Typing `/a` in the composer will show the autocomplete hint.
 
 ## Differences from deepcode-cli
 
 | Aspect | deepcode-cli | CodeWhale |
 |--------|-------------|-----------|
 | Implement stage | Serial task execution | Parallel subagent dispatch via `agent_open` (max 3 per batch) |
-| Install | curl + bash | `/skill install github:zzhaa2008hj/aide` |
+| Install | curl + bash | `curl -sSL ... \| bash` (skill + autocomplete) |
 | Skill discovery | `.agents/skills/` | `.agents/skills/` → `~/.codewhale/skills/` |
 | Orchestrator | Reads external stage skills | Fully self-contained (all stages inline) |
 | Pipeline protocol | References `aide-core/pipeline-protocol.md` | All rules inlined in SKILL.md |

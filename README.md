@@ -98,6 +98,7 @@ AIDE/
 │   ├── aide/                          # Pipeline orchestrator (Claude Code)
 │   ├── aide-deepcode/                 # Pipeline orchestrator (deepcode-cli)
 │   ├── aide-codewhale/                 # Pipeline orchestrator (CodeWhale)
+│   │   └── install.sh                 # One-line install for CodeWhale
 │   ├── aide-fix/                      # Bug-fix pipeline (analyze → implement → test)
 │   ├── aide-spec/                     # Stage 1: Requirements → Spec
 │   ├── aide-plan/                     # Stage 2: Spec → Plan
