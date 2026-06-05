@@ -7,12 +7,13 @@ set -euo pipefail
 # script provisioning).
 #
 # Usage:
-#   curl -sSL https://raw.githubusercontent.com/zzhaa2008hj/aide/develop/skills/aide-codewhale/install.sh | bash
+#   curl -sSL https://raw.githubusercontent.com/zzhaa2008hj/aide/master/skills/aide-codewhale/install.sh | bash
+#   AIDE_REF=develop curl -sSL ... | bash  # use develop branch
 #   or
 #   bash skills/aide-codewhale/install.sh
 
 AIDE_REPO="${AIDE_REPO:-https://github.com/zzhaa2008hj/aide.git}"
-AIDE_REF="${AIDE_REF:-develop}"
+AIDE_REF="${AIDE_REF:-master}"
 COMMANDS_DIR="${COMMANDS_DIR:-.codewhale/commands}"
 RAW_BASE="https://raw.githubusercontent.com/zzhaa2008hj/aide/${AIDE_REF}"
 

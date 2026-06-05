@@ -9,7 +9,7 @@ AIDE is also available as a [CodeWhale](https://github.com/Hmbown/CodeWhale) ski
 One command:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/zzhaa2008hj/aide/develop/skills/aide-codewhale/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/zzhaa2008hj/aide/master/skills/aide-codewhale/install.sh | bash
 ```
 
 This script:

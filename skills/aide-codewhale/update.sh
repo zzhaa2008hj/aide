@@ -9,9 +9,10 @@ set -euo pipefail
 # Usage:
 #   bash .aide/update-codewhale.sh
 #   or
-#   curl -sSL https://raw.githubusercontent.com/zzhaa2008hj/aide/develop/skills/aide-codewhale/update.sh | bash
+#   curl -sSL https://raw.githubusercontent.com/zzhaa2008hj/aide/master/skills/aide-codewhale/update.sh | bash
+#   AIDE_REF=develop curl -sSL ... | bash  # use develop branch
 
-AIDE_REF="${AIDE_REF:-develop}"
+AIDE_REF="${AIDE_REF:-master}"
 RAW_BASE="https://raw.githubusercontent.com/zzhaa2008hj/aide/${AIDE_REF}"
 COMMANDS_DIR="${COMMANDS_DIR:-.codewhale/commands}"
 
