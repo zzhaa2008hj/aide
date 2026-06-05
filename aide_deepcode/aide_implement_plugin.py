@@ -4,6 +4,7 @@ Reads plan.json, resolves task dependencies, dispatches to DeepCode Agent.
 """
 
 import json
+import sys
 from collections import deque
 from pathlib import Path
 from typing import Any, Dict, List, Set
@@ -68,13 +69,15 @@ class AideImplementPlugin(InteractionPlugin):
             task = ready_queue.popleft()
             try:
                 await self._implement_task(task, spec)
-                completed.add(task["id"])
+                completed.add(task.get("id", "unknown"))
                 for tid, wtask in list(waiting.items()):
                     if self._are_deps_met(wtask.get("depends_on", []), completed):
                         ready_queue.append(wtask)
                         del waiting[tid]
             except Exception as e:
-                blocked.add((task["id"], str(e)))
+                task_id = task.get("id", "unknown")
+                print(f"ERROR: aide_implement_plugin: Task {task_id} failed: {e}", file=sys.stderr)
+                blocked.add((task_id, str(e)))
 
         for tid, task in waiting.items():
             blocked.add((tid, "dependency blocked"))
@@ -110,7 +113,7 @@ Spec context: {json.dumps(spec.get('features', []))}""")
             if spec_ok and quality_ok:
                 return
 
-        raise Exception(f"Task {task['id']} failed after {self.max_review_rounds} review rounds")
+        raise Exception(f"Task {task.get('id', 'unknown')} failed after {self.max_review_rounds} review rounds")
 
     async def _spec_review(self, task: Dict, spec: Dict, provider) -> bool:
         feature_id = task.get("feature_id", "")
@@ -140,7 +143,7 @@ Reply only "pass" or "fail: <reason>"."""
     def _collect_changed_files(self, tasks: List[Dict], completed: Set[str]) -> List[str]:
         files = []
         for task in tasks:
-            if task["id"] in completed:
+            if task.get("id") in completed:
                 files.extend(task.get("files_to_touch", []))
         return list(set(files))
 

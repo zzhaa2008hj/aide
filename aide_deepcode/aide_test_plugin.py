@@ -6,6 +6,7 @@ Runs test suite, verifies spec compliance, checks coverage, with retry loop.
 import json
 import re
 import subprocess
+import sys
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -137,7 +138,9 @@ Return JSON: [{{"feature_id": "{feature.get('id', '')}", "criteria": "<criterion
                 items = json.loads(result)
                 results.extend(items)
             except json.JSONDecodeError:
-                pass
+                feature_id = feature.get('id', 'unknown')
+                print(f"WARNING: aide_test_plugin._verify_spec: JSON decode failed for feature '{feature_id}'. Criteria not verified.", file=sys.stderr)
+                print(f"WARNING: Raw output (first 300 chars): {result[:300]}", file=sys.stderr)
 
         return results
 

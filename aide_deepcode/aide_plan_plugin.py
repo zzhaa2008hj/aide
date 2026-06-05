@@ -4,6 +4,7 @@ Decomposes spec features into dependency-tracked implementation tasks.
 """
 
 import json
+import sys
 from pathlib import Path
 from typing import Any, Dict
 
@@ -84,7 +85,12 @@ Rules:
 Return ONLY valid JSON: {{"tasks": [...], "estimated_order": [...]}}"""
 
         result = await provider.generate(prompt)
-        return json.loads(result)
+        try:
+            return json.loads(result)
+        except json.JSONDecodeError:
+            print("ERROR: aide_plan_plugin: LLM returned non-JSON for plan decomposition. Falling back to empty plan.", file=sys.stderr)
+            print(f"ERROR: Raw output (first 500 chars): {result[:500]}", file=sys.stderr)
+            return {"tasks": [], "estimated_order": []}
 
     async def process_response(self, response: InteractionResponse, context: Dict[str, Any]) -> Dict[str, Any]:
         if response.action == "n":

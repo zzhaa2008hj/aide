@@ -12,20 +12,7 @@ description: >-
 
 You are a **strict sequential pipeline state machine**. Your current stage is tracked in `.aide/state.json`.
 
-**ALL pipeline output MUST be grounded in the existing project.** Stage 0.2 (project context analysis) is MANDATORY. Every spec feature, plan task, and code change must respect the existing tech stack, directory conventions, code patterns, and naming style. If the project is empty, establish architecture first.
-
-**ABSOLUTELY FORBIDDEN until Stage 3 (implement) begins:**
-- Writing, editing, or creating ANY source code file
-- Using Write/Edit on anything outside `.aide/output/`
-- Touching `src/`, `lib/`, `app/`, or any project source directory
-- Running build commands, `npm install`, or similar
-
-**The ONLY files you may create before Stage 3:**
-- `.aide/state.json`
-- `.aide/output/1-spec/*-spec.md` and `*-spec.json`
-- `.aide/output/2-plan/*-plan.md` and `*-plan.json`
-
-Violating these rules breaks the pipeline's resumability (`/aide-continue`) and leaves incomplete artifacts.
+Read `aide-core/pipeline-protocol.md` (Section: CRITICAL Pipeline Discipline) before proceeding. Locate `aide-core/` at `~/.claude/plugins/cache/aide/aide/*/` first, then `.claude/plugins/aide/`.
 
 ## How Pipeline Execution Works
 
@@ -52,51 +39,7 @@ Extract 3-5 keywords from the user's request, lowercase, hyphenate. Example: "Ad
 
 ### 0.2 Analyze project context (MANDATORY)
 
-**You MUST ground all pipeline decisions in the existing project.** Before any stage work, build a thorough understanding of the codebase.
-
-#### If the project has existing code:
-
-1. **Map the project structure**:
-   ```bash
-   find . -maxdepth 1 -type f -name "*.json" -o -name "*.yaml" -o -name "*.toml" -o -name "*.cfg" -o -name "Makefile" -o -name "Dockerfile" | head -20
-   ls -la
-   ```
-
-2. **Identify tech stack**: Read `package.json`, `requirements.txt`, `go.mod`, `Cargo.toml`, `pyproject.toml`, `Gemfile`, `pom.xml`, `build.gradle`, etc. Determine: language, framework, build system, test framework, package manager.
-
-3. **Understand directory conventions**:
-   ```bash
-   find . -maxdepth 3 -type d ! -path './.git/*' ! -path './node_modules/*' ! -path './.aide/*' ! -path './venv/*' ! -path './__pycache__/*' | sort
-   ```
-
-4. **Identify existing patterns**: Read key source files (entry points, config, a few representative components/modules). Note: naming conventions, file organization patterns, code style, framework usage, routing patterns, state management, existing abstractions.
-
-5. **Check for existing tests**:
-   ```bash
-   find . -path '*/test*' -o -path '*/__test*' -o -path '*/spec*' | head -20
-   ```
-
-6. **Summarize findings** in a brief project context memo. This memo informs ALL subsequent stages — spec, plan, and implement MUST respect existing patterns.
-
-#### If the project is empty or new:
-
-1. **Architecture first**: Before writing any spec, establish the project architecture:
-   - Technology choices (language, framework, build tool)
-   - Directory structure conventions
-   - Key architectural decisions (state management, routing, data layer, component pattern)
-
-2. **Use AskUserQuestion** to confirm architecture decisions:
-   ```
-   Question: "This is a new project. I'll establish the architecture. Which stack?"
-   Header: "Architecture"
-   Options:
-     - (infer from any existing config files)
-     - "Other (specify in feedback)"
-   ```
-
-3. **Document** architecture decisions before proceeding to Stage 1 spec. These become the `constraints` in spec.json.
-
-**This context analysis is NOT optional.** Skipping it produces specs and code that don't fit the project.
+**You MUST ground all pipeline decisions in the existing project.** Read `aide-core/pipeline-protocol.md` (Section: Project Context Analysis) and follow the procedure there exactly. To locate `aide-core/`, check `~/.claude/plugins/cache/aide/aide/*/` first, then `.claude/plugins/aide/`.
 
 ### 0.3 Record current branch
 
@@ -181,18 +124,7 @@ Options:
 
 ### State update
 
-```bash
-python3 -c "
-import json
-with open('.aide/state.json') as f:
-    s = json.load(f)
-s['completed_stages'].append('spec')
-s['current_stage'] = 'plan'
-s['last_updated'] = '$(date -Iseconds)'
-with open('.aide/state.json', 'w') as f:
-    json.dump(s, f, indent=2)
-"
-```
+Follow **Pattern A — Basic Stage Transition** in `aide-core/pipeline-protocol.md`, substituting `{current_stage}="spec"` and `{next_stage}="plan"`.
 
 **Stage 1 complete.** Proceed to Stage 2.
 
@@ -235,18 +167,7 @@ Options:
 
 ### State update
 
-```bash
-python3 -c "
-import json
-with open('.aide/state.json') as f:
-    s = json.load(f)
-s['completed_stages'].append('plan')
-s['current_stage'] = 'implement'
-s['last_updated'] = '$(date -Iseconds)'
-with open('.aide/state.json', 'w') as f:
-    json.dump(s, f, indent=2)
-"
-```
+Follow **Pattern A — Basic Stage Transition** in `aide-core/pipeline-protocol.md`, substituting `{current_stage}="plan"` and `{next_stage}="implement"`.
 
 **Stage 2 complete.** Proceed to Stage 3.
 
@@ -308,18 +229,7 @@ Use the same date-slug pattern as previous stages for the filename.
 
 ### State update
 
-```bash
-python3 -c "
-import json
-with open('.aide/state.json') as f:
-    s = json.load(f)
-s['completed_stages'].append('implement')
-s['current_stage'] = 'test'
-s['last_updated'] = '$(date -Iseconds)'
-with open('.aide/state.json', 'w') as f:
-    json.dump(s, f, indent=2)
-"
-```
+Follow **Pattern A — Basic Stage Transition** in `aide-core/pipeline-protocol.md`, substituting `{current_stage}="implement"` and `{next_stage}="test"`.
 
 **Stage 3 complete.** Proceed to Stage 4.
 
@@ -351,18 +261,7 @@ Read the `verdict` from test-report.json:
 
 ### State update (on pass or user accept)
 
-```bash
-python3 -c "
-import json
-with open('.aide/state.json') as f:
-    s = json.load(f)
-s['completed_stages'].append('test')
-s['current_stage'] = 'complete'
-s['last_updated'] = '$(date -Iseconds)'
-with open('.aide/state.json', 'w') as f:
-    json.dump(s, f, indent=2)
-"
-```
+Follow **Pattern C — Stage Transition with Cleanup** in `aide-core/pipeline-protocol.md`, substituting `{current_stage}="test"` and `{next_stage}="complete"`.
 
 ---
 
