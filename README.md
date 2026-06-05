@@ -1,6 +1,6 @@
 # AIDE — AI-Driven Development Automation
 
-A Claude Code skill collection for structured, AI-driven development workflows. Business projects install AIDE via `claude plugin install` to add `/aide` — a pipeline that takes a requirement and runs it through spec → plan → implement → test with human gates at each stage.
+A Claude Code skill collection for structured, AI-driven development workflows. Business projects install AIDE via `claude plugin install` to add `/aide` — a pipeline that takes a requirement and runs it through spec → plan → implement → test with human gates at each stage. Also available for **deepcode-cli** via install script.
 
 ## Quick Start
 
@@ -48,6 +48,20 @@ When AIDE releases new features or fixes:
 
 This runs `claude plugin marketplace update aide` then `claude plugin update aide@aide --scope project`. Safe to run mid-pipeline.
 
+### deepcode-cli: Install and Update
+
+For projects using deepcode-cli instead of Claude Code:
+
+```bash
+# Install (from project root)
+curl -sSL https://raw.githubusercontent.com/zzhaa2008hj/aide/master/aide_deepcode/install-deepcode-cli.sh | bash
+
+# Update to latest version
+bash update-deepcode-cli.sh
+```
+
+Installs skills to `.agents/skills/` and schemas to `.aide/schemas/`. The update script compares `.aide/version` against the repo's latest version and applies updates when available. Supports `AIDE_REPO` and `AIDE_REF` env vars for custom sources.
+
 ### Customize gates
 
 Edit `.aide/config.yaml` to change gate types per stage:
@@ -91,8 +105,11 @@ AIDE/
 │   ├── verification-before-completion/# Completion verification (superpowers)
 │   ├── writing-plans/                 # Implementation planning (superpowers)
 │   └── writing-skills/                # Skill authoring (superpowers)
+├── aide_deepcode/         # deepcode-cli distribution
+│   ├── install-deepcode-cli.sh    # Install skills for deepcode-cli
+│   └── update-deepcode-cli.sh     # Check + apply updates
 ├── aide-core/             # Shared infrastructure
-│   ├── schemas/           # JSON Schema per stage (spec, plan, implement)
+│   ├── schemas/           # JSON Schema per stage (spec, plan, implement, test)
 │   ├── gate.md            # Gate engine specification
 │   ├── conventions.md     # Directory, naming, branch, and git conventions
 │   └── scripts/
@@ -141,6 +158,8 @@ The pre-commit hook automatically bumps `plugin.json` + `marketplace.json` when 
 | Concurrent subagent dispatch (max 3) | Done |
 | Version management (pre-commit + pre-push hooks) | Done |
 | Test stage (`aide-test` skill) | Phase 3 |
+| deepcode-cli install (`install-deepcode-cli.sh`) | Done |
+| deepcode-cli update (`update-deepcode-cli.sh`) | Done |
 
 ## Dependencies
 
