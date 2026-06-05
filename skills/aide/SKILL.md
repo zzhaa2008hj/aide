@@ -68,51 +68,55 @@ Batch independent operations together. When invoking a stage skill, pass the com
 
 **If this is a new pipeline:**
 
-1. **Generate a slug** from the user's requirement description. Follow these rules:
+1. **Generate a slug** from the user's requirement description:
    - Extract 3-5 core keywords, convert to lowercase, join with `-`
-   - Use only letters, numbers, and hyphens
    - Example: `"Add user login with OAuth support"` → `user-login-oauth`
-   - Example: `"Build a REST API for orders"` → `rest-api-orders`
 
-2. **Construct the branch name**: `aide/<slug>`
-
-3. **Check for existing branches with the same name**:
-   ```bash
-   git branch --list "aide/<slug>*"
-   ```
-   - If the exact name exists, append `-2`, `-3`, etc. until a free name is found.
-   - Example: `aide/user-login-oauth` exists → try `aide/user-login-oauth-2`, then `aide/user-login-oauth-3`, etc.
-
-4. **Record the original branch**:
+2. **Record current branch**:
    ```bash
    git branch --show-current
    ```
-   Store this as `ORIG_BRANCH`. If the user is in detached HEAD state, record the commit hash instead.
+   Store as `ORIG_BRANCH`. If detached HEAD, record commit hash.
 
-5. **Check for uncommitted changes**:
+3. **Ask user: create a new branch?**
+
+   Use `AskUserQuestion`:
+   ```
+   Question: "Create a new aide/<slug> branch for this pipeline?"
+   Options:
+     - "<branch-name>" (list recent branches: ORIG_BRANCH + other local branches, max 5)
+     - "skip: Stay on <ORIG_BRANCH>, no branch isolation"
+   Multi-select: false
+   ```
+
+   - If user selects a branch name: that becomes the source. Construct `aide/<slug>` from it.
+   - If `skip` (default): set `AIDE_BRANCH=""`, skip steps 4-6 below. Work directly on `ORIG_BRANCH`.
+
+4. **Check for existing branches**:
+   ```bash
+   git branch --list "aide/<slug>*"
+   ```
+   If the exact name exists, append `-2`, `-3`, etc.
+
+5. **Handle uncommitted changes**:
    ```bash
    git status --porcelain
    ```
-   - If there are uncommitted changes (dirty working tree):
-     ```bash
-     git stash push -m "AIDE: auto-stash before aide/<slug>"
-     ```
-     Record that a stash was created so it can be reported later.
-   - If stash fails, report the error and abort.
+   If dirty: `git stash push -m "AIDE: auto-stash before aide/<slug>"`. Record stash.
 
-6. **Create and switch to the new branch**:
+6. **Create and switch**:
    ```bash
    git checkout -b aide/<slug>
    ```
-   - If this fails: restore the stash (if one was created) with `git stash pop`, report the error, and abort.
+   If fails: restore stash, report, abort.
 
 7. **Report**:
    ```
-   Created branch aide/<slug> (from <ORIG_BRANCH>). Pipeline artifacts will be committed here.
+   Created branch aide/<slug> (from <source-branch>). Pipeline artifacts will be committed here.
    ```
-   If a stash was created:
+   Or if skipped:
    ```
-   Uncommitted changes stashed. Restore with: git stash pop
+   Working on <ORIG_BRANCH>. Pipeline artifacts will be committed here directly.
    ```
 
 ### Step 2: Read conventions
@@ -554,32 +558,43 @@ Pipeline complete. All 4 stages done.
 
 ## Completion Report
 
-After all enabled stages have completed (or the pipeline was aborted), present a summary:
+After all enabled stages have completed, present the pipeline summary:
 
 ```
 ## AIDE Pipeline Complete
 
-| Stage   | Status     | Commit                                   |
-|---------|------------|------------------------------------------|
-| spec    | Completed  | abc1234 (aide(spec): add auth spec)      |
-| plan    | Skipped    | —                                        |
-| implement | Skipped  | —                                        |
-| test    | Skipped    | —                                        |
+| Stage   | Status     |
+|---------|------------|
+| spec    | Completed  |
+| plan    | Completed  |
+| implement | Completed |
+| test    | Completed  |
 
-Branch: aide/<slug>
-Original branch: <ORIG_BRANCH>
-
-Next steps:
-  git checkout <ORIG_BRANCH> && git merge aide/<slug>
+Branch: <current-branch>
 ```
 
-If a stash was created in Step 0, append:
+If a branch was created (Step 1), **ask user: merge?**
+
+Use `AskUserQuestion`:
+```
+Question: "Merge aide/<slug> into a target branch?"
+Options:
+  - "<ORIG_BRANCH> (Recommended)"
+  - (list other local branches, max 5)
+  - "skip: No merge, artifacts stay on aide/<slug>"
+Multi-select: false
+```
+
+- If user selects a target: `git checkout <target> && git merge aide/<slug>`. Report: "Merged aide/<slug> into <target>."
+- If `skip` (default): no merge. Report: "Artifacts remain on <current-branch>. Merge manually when ready."
+
+If a stash was created in Step 1, append:
 
 ```
 Auto-stashed changes: run `git stash list` to review.
 ```
 
-If aborted early, show what was completed and note: "Resume on branch `aide/<slug>` with `/aide-continue`."
+If aborted early, show what was completed and note: "Resume on branch `<current-branch>` with `/aide-continue`."
 
 ## Important Guidelines
 

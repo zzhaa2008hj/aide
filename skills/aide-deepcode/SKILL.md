@@ -16,9 +16,24 @@ Execute each stage by following the instructions in `.agents/skills/aide-{stage}
 
 ## Startup Sequence
 
-### Step 1: Generate slug and initialize
+### Step 1: Generate slug, handle branching, initialize
 
-Parse the user's request. Generate a kebab-case slug (3-5 keywords, lowercase, hyphens). Example: "Add user login" → `user-login`.
+Parse the user's request. Generate a kebab-case slug (3-5 keywords, lowercase, hyphens).
+
+Record current branch: `git branch --show-current` → `ORIG_BRANCH`.
+
+**Ask user: create a new branch?**
+
+Use `AskUserQuestion`:
+```
+Question: "Create a new aide/<slug> branch for this pipeline?"
+Options:
+  - (list recent branches: current + other locals)
+  - "skip: Stay on <ORIG_BRANCH>, no branch isolation"
+```
+
+- If user selects a branch: create `aide/<slug>` from it. Handle stash if needed.
+- If `skip` (default): stay on `ORIG_BRANCH`, skip branch creation.
 
 ```bash
 mkdir -p .aide/output/1-spec .aide/output/2-plan .aide/output/3-implement .aide/output/4-test
@@ -162,8 +177,22 @@ AIDE Pipeline Complete
 | implement | Completed |
 | test      | Completed |
 
-Output: .aide/output/
+Branch: <current-branch>
 ```
+
+If a branch was created, **ask user: merge?**
+
+Use `AskUserQuestion`:
+```
+Question: "Merge aide/<slug> into a target branch?"
+Options:
+  - "<ORIG_BRANCH> (Recommended)"
+  - (other local branches)
+  - "skip: No merge, artifacts stay on this branch"
+```
+
+- Branch selected → `git checkout <target> && git merge aide/<slug>`
+- `skip` (default) → no merge, artifacts remain on current branch
 
 ---
 
