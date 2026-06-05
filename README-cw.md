@@ -18,12 +18,21 @@ This script:
 
 After the script, run the printed command in your CodeWhale session to install the skill. Then invoke via `/aide "<description>"`. Typing `/a` in the composer will show the autocomplete hint.
 
+## Update
+
+```bash
+curl -sSL https://raw.githubusercontent.com/zzhaa2008hj/aide/develop/skills/aide-codewhale/update.sh | bash
+```
+
+Refreshes the user command template, then run `/skill update aide` in CodeWhale.
+
 ## Differences from deepcode-cli
 
 | Aspect | deepcode-cli | CodeWhale |
 |--------|-------------|-----------|
 | Implement stage | Serial task execution | Parallel subagent dispatch via `agent_open` (max 3 per batch) |
-| Install | curl + bash | `curl -sSL ... \| bash` (skill + autocomplete) |
+| Install | curl + bash | `curl -sSL ... \| bash` + `/skill install` |
+| Update | `bash .aide/update-deepcode-cli.sh` | `curl -sSL ... \| bash` + `/skill update aide` |
 | Skill discovery | `.agents/skills/` | `.agents/skills/` → `~/.codewhale/skills/` |
 | Orchestrator | Reads external stage skills | Fully self-contained (all stages inline) |
 | Pipeline protocol | References `aide-core/pipeline-protocol.md` | All rules inlined in SKILL.md |
