@@ -55,7 +55,27 @@ rm -f README.md SUPERSPOWERS_VERSION .gitignore 2>/dev/null || true
 
 cd - > /dev/null
 
-# Step 5: Verify
+# Step 5: Register AIDE in DeepCode's plugin init
+PLUGIN_INIT="workflows/plugins/__init__.py"
+AIDE_LINES="from .aide import register_aide_plugins
+register_aide_plugins()"
+
+if [ -f "$PLUGIN_INIT" ]; then
+    if grep -q "register_aide_plugins" "$PLUGIN_INIT" 2>/dev/null; then
+        echo "[skip]  AIDE already registered in $PLUGIN_INIT"
+    else
+        echo "$AIDE_LINES" >> "$PLUGIN_INIT"
+        echo "[done]  Added AIDE registration to $PLUGIN_INIT"
+    fi
+else
+    echo "[warn]  $PLUGIN_INIT not found — AIDE plugins must be registered manually."
+    echo "         Add to DeepCode startup:"
+    echo ""
+    echo "         from workflows.plugins.aide import register_aide_plugins"
+    echo "         register_aide_plugins()"
+fi
+
+# Step 6: Verify
 echo ""
 echo "=== Installation complete ==="
 echo "Path: $PLUGIN_DIR"
