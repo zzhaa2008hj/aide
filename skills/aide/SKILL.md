@@ -23,6 +23,32 @@ To minimize interruptions during pipeline execution, request these permissions u
 
 When invoking stage skills, pass the full context so the stage can work autonomously. Batch independent operations to reduce round-trips.
 
+## ⛔ CRITICAL — Pipeline Discipline
+
+You are a **strict sequential pipeline state machine**. Your current stage is tracked in `.aide/state.json`.
+
+**ABSOLUTELY FORBIDDEN until Stage 3 (implement) begins:**
+- Writing, editing, or creating ANY source code file
+- Using Write/Edit on anything outside `.aide/output/`
+- Touching `src/`, `lib/`, `app/`, or any project source directory
+- Running build commands, `npm install`, or similar
+
+**The ONLY files you may create before Stage 3:**
+- `.aide/state.json`
+- `.aide/output/1-spec/*-spec.md` and `*-spec.json`
+- `.aide/output/2-plan/*-plan.md` and `*-plan.json`
+
+**Each stage transition requires:**
+1. Reading the stage-specific skill file or following the stage instructions below
+2. Following the workflow EXACTLY — do not improvise or skip ahead
+3. Validating output artifacts exist
+4. Passing the gate (AskUserQuestion or auto per config)
+5. Updating `.aide/state.json`
+
+**You are in exactly ONE stage at a time. Complete it fully before proceeding.**
+
+If `.aide/state.json` exists at startup with `completed_stages`, respect it — do NOT re-run completed stages.
+
 ## Core Principle
 
 **Orchestrate, do not develop.** When a stage needs work done, load the corresponding stage skill and let it handle the work. Your role is coordination: track progress, manage gates, handle errors, and report results.
@@ -204,11 +230,13 @@ Tell the user which stages will run, in what order, and list the enabled stages 
 
 ## Stage Execution Loop
 
-For each enabled stage in order (spec → plan → implement → test), execute the following flow:
+For each enabled stage in order (spec → plan → implement → test), execute the following flow. **Do NOT skip stages.** Each stage must complete before the next begins.
 
 ### 0. Check resume state
 
 If invoked via `aide-continue`, check `.aide/state.json`. If the current stage is in `completed_stages`, skip it and move to the next. Report: "Skipping <stage> (already completed)."
+
+**🔴 Check current_stage**: Read `.aide/state.json`. If `current_stage` is not the stage you're about to execute and that stage is not in `completed_stages`, something is wrong — verify the state and correct before proceeding.
 
 ### 1. Display Progress
 
@@ -354,6 +382,10 @@ git commit -m "aide(spec): add user authentication spec with F001-F003"
 
 ## Stage 3: Implement (Subagent-Driven)
 
+**🔴 CHECK**: Is `current_stage` in `.aide/state.json` set to `"implement"`? Both `"spec"` AND `"plan"` must be in `completed_stages`. If not, STOP — go back and complete the missing stage.
+
+**🟢 YOU MAY NOW WRITE SOURCE CODE.** The restriction is lifted because spec and plan are done.
+
 The implement stage does not use a single skill. Instead, the orchestrator reads `plan.json`, resolves task dependencies, and dispatches each task through Superpowers' subagent-driven-development pattern.
 
 ### Prerequisites
@@ -469,6 +501,8 @@ Then proceed to the gate checkpoint for `after_implement` (default: `auto`).
 ---
 
 ## Stage 4: Test (Verification)
+
+**🔴 CHECK**: Is `current_stage` set to `"test"`? `"implement"` must be in `completed_stages`. If not, STOP and go back.
 
 The test stage invokes the `aide-test` skill and implements a retry loop for failures.
 
