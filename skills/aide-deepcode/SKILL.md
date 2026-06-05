@@ -57,7 +57,7 @@ Question: "Create a new aide/<slug> branch for this pipeline?"
 Header: "Branch"
 Options:
   - "<ORIG_BRANCH> (Recommended)" — create aide/<slug> from current branch
-  - "skip (Recommended)" — stay on current branch, no isolation
+  - "skip" — stay on current branch, no isolation
 ```
 
 - If user selects a branch name: `git checkout -b aide/<slug> <selected-branch>`

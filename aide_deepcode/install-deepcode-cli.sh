@@ -33,7 +33,7 @@ fi
 
 # Step 2: Fetch AIDE skills via sparse checkout
 TMP_DIR=$(mktemp -d)
-trap "rm -rf $TMP_DIR" EXIT
+trap 'rm -rf -- "$TMP_DIR"' EXIT INT TERM
 
 echo "[info] Fetching skills/ from $AIDE_REPO ($AIDE_REF)..."
 
@@ -41,7 +41,7 @@ cd "$TMP_DIR"
 git init -q
 git remote add origin "$AIDE_REPO" 2>/dev/null || git remote set-url origin "$AIDE_REPO"
 git sparse-checkout init --cone >/dev/null 2>&1
-git sparse-checkout set skills aide-core/schemas .claude-plugin/plugin.json >/dev/null 2>&1
+git sparse-checkout set skills aide-core aide_deepcode .claude-plugin/plugin.json >/dev/null 2>&1
 git fetch origin "$AIDE_REF" --depth 1 -q 2>/dev/null || git fetch origin "$AIDE_REF" --depth 1
 git checkout FETCH_HEAD >/dev/null 2>&1
 cd - > /dev/null 2>&1 || true
@@ -55,30 +55,40 @@ cd - > /dev/null 2>&1 || true
 # Step 3: Install only deepcode-cli compatible skills
 mkdir -p "$SKILLS_DIR"
 
-# Mapping: source_skill → dest_name
+# Mapping: source_skill → dest_name (bash 3.2 compatible — no associative arrays)
 # aide-deepcode replaces aide (different orchestrator for deepcode-cli)
 # Other stage skills are shared
 # aide-update is Claude Code specific — excluded
-declare -A SKILL_MAP=(
-    ["aide-deepcode"]="aide"
-    ["aide-spec"]="aide-spec"
-    ["aide-plan"]="aide-plan"
-    ["aide-test"]="aide-test"
-    ["aide-continue"]="aide-continue"
-    ["aide-init"]="aide-init"
-)
+skill_dest() {
+    case "$1" in
+        aide-deepcode) echo "aide" ;;
+        aide-spec) echo "aide-spec" ;;
+        aide-plan) echo "aide-plan" ;;
+        aide-test) echo "aide-test" ;;
+        aide-continue) echo "aide-continue" ;;
+        aide-init) echo "aide-init" ;;
+    esac
+}
+
+SKILL_SOURCES="aide-deepcode aide-spec aide-plan aide-test aide-continue aide-init"
+SKILL_DESTS="aide aide-spec aide-plan aide-test aide-continue aide-init"
 
 COPIED=0
-for src_name in "${!SKILL_MAP[@]}"; do
-    dst_name="${SKILL_MAP[$src_name]}"
+for src_name in $SKILL_SOURCES; do
+    dst_name=$(skill_dest "$src_name")
     src="$TMP_DIR/skills/$src_name/SKILL.md"
     dst_dir="$SKILLS_DIR/$dst_name"
 
-    if [ -f "$src" ]; then
-        mkdir -p "$dst_dir"
-        cp "$src" "$dst_dir/SKILL.md"
-        echo "  [done]  $dst_name (from $src_name)"
-        COPIED=$((COPIED + 1))
+    if [ -f "$src" ] && [ -s "$src" ]; then
+        # Basic integrity check: verify file starts with YAML frontmatter
+        if head -1 "$src" | grep -q '^---$'; then
+            mkdir -p "$dst_dir"
+            cp "$src" "$dst_dir/SKILL.md"
+            echo "  [done]  $dst_name (from $src_name)"
+            COPIED=$((COPIED + 1))
+        else
+            echo "  [warn]  $src_name: SKILL.md missing frontmatter, skipped"
+        fi
     else
         echo "  [skip]  $src_name (not found in repo)"
     fi
@@ -100,21 +110,30 @@ fi
 
 # Step 4b: Record installed version from plugin.json
 VERSION=$(python3 -c "
-import json
-data = json.load(open('$TMP_DIR/.claude-plugin/plugin.json'))
+import json, sys
+data = json.load(open(sys.argv[1]))
 print(data['version'])
-" 2>/dev/null || echo "unknown")
+" "$TMP_DIR/.claude-plugin/plugin.json" 2>/dev/null || echo "unknown")
 echo "$VERSION" > .aide/version
 echo ""
 echo "  Version: $VERSION written to .aide/version"
 
+# Step 4c: Install update script for future upgrades
+UPDATE_SRC="$TMP_DIR/aide_deepcode/update-deepcode-cli.sh"
+if [ -f "$UPDATE_SRC" ]; then
+    cp "$UPDATE_SRC" .aide/update-deepcode-cli.sh
+    chmod +x .aide/update-deepcode-cli.sh
+    echo "  Update script installed to .aide/update-deepcode-cli.sh"
+fi
+
 echo ""
 echo "=== Installation complete ==="
 echo "$COPIED skills installed:"
-for dst_name in "${SKILL_MAP[@]}"; do
+for dst_name in $SKILL_DESTS; do
     if [ -f "$SKILLS_DIR/$dst_name/SKILL.md" ]; then
         desc=$(python3 -c "
-text = open('$SKILLS_DIR/$dst_name/SKILL.md').read()
+import sys
+text = open(sys.argv[1]).read()
 parts = text.split('---')
 if len(parts) >= 2:
     lines = parts[1].strip().split('\n')
@@ -136,7 +155,7 @@ if len(parts) >= 2:
     # Remove 'Invoke via' instruction for cleaner display
     desc = desc.split('Invoke via')[0].strip()
     print(desc[:80])
-" 2>/dev/null)
+" "$SKILLS_DIR/$dst_name/SKILL.md" 2>/dev/null)
         echo "  /$dst_name — ${desc:-<no description>}"
     fi
 done

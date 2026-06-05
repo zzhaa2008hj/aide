@@ -17,8 +17,12 @@ REMOTE_URL="$2"
 # Tracked functional paths (changes here require version bump)
 FUNCTIONAL_PATHS=("skills/" "aide-core/" "templates/" "hooks/")
 
-# Detect default branch
-DEFAULT_BRANCH=$(git remote show origin 2>/dev/null | grep -E 'HEAD (branch|分支)' | awk '{print $NF}' || true)
+# Detect default branch (locale-independent: prefer symbolic-ref, fall back to remote show)
+DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|^refs/remotes/origin/||' || true)
+if [ -z "$DEFAULT_BRANCH" ]; then
+    # Fallback: handle both ASCII colon (English) and fullwidth colon (Chinese/Japanese)
+    DEFAULT_BRANCH=$(git remote show origin 2>/dev/null | grep -E 'HEAD (branch|分支|ブランチ|브랜치)' | sed 's/.*[:：] *//' || true)
+fi
 [ -z "$DEFAULT_BRANCH" ] && DEFAULT_BRANCH="master"
 
 while read -r LOCAL_REF LOCAL_SHA REMOTE_REF REMOTE_SHA; do
@@ -83,9 +87,16 @@ EOF
     fi
 
     # Verify version actually bumped in both files
-    OLD_MP_VERSION=$(git show "$REMOTE_SHA":.claude-plugin/marketplace.json 2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['plugins'][0]['version'])" 2>/dev/null || echo "0.0.0")
+    # For new branches (REMOTE_SHA is all-zeros), compare against merge-base with default branch
+    if [ "$REMOTE_SHA" = "0000000000000000000000000000000000000000" ]; then
+        COMPARE_SHA=$(git merge-base "origin/$DEFAULT_BRANCH" HEAD 2>/dev/null || echo "")
+        [ -z "$COMPARE_SHA" ] && COMPARE_SHA=$(git rev-list --max-parents=0 HEAD 2>/dev/null || echo "")
+    else
+        COMPARE_SHA="$REMOTE_SHA"
+    fi
+    OLD_MP_VERSION=$(git show "${COMPARE_SHA}:.claude-plugin/marketplace.json" 2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['plugins'][0]['version'])" 2>/dev/null || echo "0.0.0")
     NEW_MP_VERSION=$(git show "$LOCAL_SHA":.claude-plugin/marketplace.json 2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['plugins'][0]['version'])" 2>/dev/null || echo "")
-    OLD_PLUGIN_VERSION=$(git show "$REMOTE_SHA":.claude-plugin/plugin.json 2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['version'])" 2>/dev/null || echo "0.0.0")
+    OLD_PLUGIN_VERSION=$(git show "${COMPARE_SHA}:.claude-plugin/plugin.json" 2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['version'])" 2>/dev/null || echo "0.0.0")
     NEW_PLUGIN_VERSION=$(git show "$LOCAL_SHA":.claude-plugin/plugin.json 2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['version'])" 2>/dev/null || echo "")
 
     VERSION_MISMATCH=false
