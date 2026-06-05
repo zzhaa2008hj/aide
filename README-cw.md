@@ -8,10 +8,10 @@ AIDE is also available as a [CodeWhale](https://github.com/Hmbown/CodeWhale) ski
 
 ```bash
 # 从 master 分支安装（稳定版）
-curl -sSL https://raw.githubusercontent.com/zzhaa2008hj/aide/develop/skills/aide-codewhale/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/zzhaa2008hj/aide/master/skills/aide-codewhale/install.sh | bash
 
 # 从 develop 分支安装（开发版）
-curl -sSL https://raw.githubusercontent.com/zzhaa2008hj/aide/develop/skills/aide-codewhale/install.sh | AIDE_REF=develop bash
+curl -sSL https://raw.githubusercontent.com/zzhaa2008hj/aide/master/skills/aide-codewhale/install.sh | AIDE_REF=develop bash
 ```
 
 This script:
