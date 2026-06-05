@@ -146,10 +146,27 @@ This eliminates ~180 lines of duplication while keeping orchestrator-specific lo
 ### Install for deepcode-cli
 
 ```bash
+# 从 master 分支安装（稳定版）
 curl -sSL https://raw.githubusercontent.com/zzhaa2008hj/aide/master/aide_deepcode/install-deepcode-cli.sh | bash
+
+# 从 develop 分支安装（开发版）
+curl -sSL https://raw.githubusercontent.com/zzhaa2008hj/aide/master/aide_deepcode/install-deepcode-cli.sh | AIDE_REF=develop bash
+
+# 也可以切换仓库源
+AIDE_REPO=https://github.com/zzhaa2008hj/aide.git AIDE_REF=develop bash aide_deepcode/install-deepcode-cli.sh
 ```
 
 Installs skills into `.agents/skills/` — deepcode-cli discovers them automatically. Stage-specific skills (spec, plan, test) are shared between Claude Code and deepcode-cli.
+
+**Update:**
+
+```bash
+# 更新到当前分支最新
+bash .aide/update-deepcode-cli.sh
+
+# 从 develop 分支更新
+AIDE_REF=develop bash .aide/update-deepcode-cli.sh
+```
 
 ## Version Management
 

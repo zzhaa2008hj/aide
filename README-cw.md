@@ -6,10 +6,12 @@ AIDE is also available as a [CodeWhale](https://github.com/Hmbown/CodeWhale) ski
 
 ## Install
 
-One command:
-
 ```bash
+# 从 master 分支安装（稳定版）
 curl -sSL https://raw.githubusercontent.com/zzhaa2008hj/aide/master/skills/aide-codewhale/install.sh | bash
+
+# 从 develop 分支安装（开发版）
+curl -sSL https://raw.githubusercontent.com/zzhaa2008hj/aide/master/skills/aide-codewhale/install.sh | AIDE_REF=develop bash
 ```
 
 This script:
@@ -23,7 +25,11 @@ After the script, run the printed command in your CodeWhale session to install t
 ## Update
 
 ```bash
+# 更新到当前分支最新
 bash .aide/update-codewhale.sh
+
+# 从 develop 分支更新
+AIDE_REF=develop bash .aide/update-codewhale.sh
 ```
 
 Checks `.aide/version` against the latest, refreshes the user command, prints `/skill update aide`.
