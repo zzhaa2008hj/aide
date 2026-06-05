@@ -94,7 +94,7 @@ cd "$TMP_DIR"
 git init -q
 git remote add origin "$AIDE_REPO" 2>/dev/null || git remote set-url origin "$AIDE_REPO"
 git sparse-checkout init --cone >/dev/null 2>&1
-git sparse-checkout set skills aide-core/schemas >/dev/null 2>&1
+git sparse-checkout set skills aide-core >/dev/null 2>&1
 git fetch origin "$AIDE_REF" --depth 1 -q 2>/dev/null || git fetch origin "$AIDE_REF" --depth 1
 git checkout FETCH_HEAD >/dev/null 2>&1
 cd - > /dev/null 2>&1 || true
@@ -106,27 +106,37 @@ fi
 
 # Step 4a: Update skills
 # NOTE: This mapping must stay in sync with install-deepcode-cli.sh
-declare -A SKILL_MAP=(
-    ["aide-deepcode"]="aide"
-    ["aide-spec"]="aide-spec"
-    ["aide-plan"]="aide-plan"
-    ["aide-test"]="aide-test"
-    ["aide-continue"]="aide-continue"
-    ["aide-init"]="aide-init"
-)
+skill_dest() {
+    case "$1" in
+        aide-deepcode) echo "aide" ;;
+        aide-spec) echo "aide-spec" ;;
+        aide-plan) echo "aide-plan" ;;
+        aide-test) echo "aide-test" ;;
+        aide-continue) echo "aide-continue" ;;
+        aide-init) echo "aide-init" ;;
+    esac
+}
+
+SKILL_SOURCES="aide-deepcode aide-spec aide-plan aide-test aide-continue aide-init"
 
 UPDATED=0
 SKIPPED=0
-for src_name in "${!SKILL_MAP[@]}"; do
-    dst_name="${SKILL_MAP[$src_name]}"
+for src_name in $SKILL_SOURCES; do
+    dst_name=$(skill_dest "$src_name")
     src="$TMP_DIR/skills/$src_name/SKILL.md"
     dst_dir=".agents/skills/$dst_name"
 
-    if [ -f "$src" ]; then
-        mkdir -p "$dst_dir"
-        cp "$src" "$dst_dir/SKILL.md"
-        echo "  [done]  $dst_name (from $src_name)"
-        UPDATED=$((UPDATED + 1))
+    if [ -f "$src" ] && [ -s "$src" ]; then
+        # Basic integrity check: verify file starts with YAML frontmatter
+        if head -1 "$src" | grep -q '^---$'; then
+            mkdir -p "$dst_dir"
+            cp "$src" "$dst_dir/SKILL.md"
+            echo "  [done]  $dst_name (from $src_name)"
+            UPDATED=$((UPDATED + 1))
+        else
+            echo "  [warn]  $src_name: SKILL.md missing frontmatter, skipped"
+            SKIPPED=$((SKIPPED + 1))
+        fi
     else
         echo "  [skip]  $src_name (not found in repo, keeping existing)"
         SKIPPED=$((SKIPPED + 1))

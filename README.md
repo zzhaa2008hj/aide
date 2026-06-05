@@ -58,10 +58,16 @@ For projects using deepcode-cli instead of Claude Code:
 curl -sSL https://raw.githubusercontent.com/zzhaa2008hj/aide/master/aide_deepcode/install-deepcode-cli.sh | bash
 
 # Update to latest version
-bash update-deepcode-cli.sh
+bash .aide/update-deepcode-cli.sh
 ```
 
-Installs skills to `.agents/skills/` and schemas to `.aide/schemas/`. The update script compares `.aide/version` against the repo's latest version and applies updates when available. Supports `AIDE_REPO` and `AIDE_REF` env vars for custom sources.
+Installs skills to `.agents/skills/`, schemas to `.aide/schemas/`, and the update script to `.aide/update-deepcode-cli.sh`. The update script compares `.aide/version` against the repo's latest version and applies updates when available. Supports `AIDE_REPO` and `AIDE_REF` env vars for custom sources.
+
+> **Upgrading from an old install** (before 1.2.x) that lacks `.aide/update-deepcode-cli.sh`?
+> Run the install script again — it's idempotent and will add the missing update script:
+> ```bash
+> curl -sSL https://raw.githubusercontent.com/zzhaa2008hj/aide/master/aide_deepcode/install-deepcode-cli.sh | bash
+> ```
 
 ### Customize gates
 
@@ -157,12 +163,6 @@ The pre-commit hook automatically bumps `plugin.json` + `marketplace.json` when 
 
 ### Done
 
-### Done
-
-### Done
-
-### Done
-
 | Feature | Status |
 |---------|--------|
 | Orchestrator (CC + deepcode-cli) | Done |
@@ -178,7 +178,6 @@ The pre-commit hook automatically bumps `plugin.json` + `marketplace.json` when 
 | Pipeline discipline guards (state machine enforcement) | Done |
 | Shared pipeline protocol (deduplicated orchestrators) | Done |
 | Version management (pre-commit + pre-push hooks) | Done |
-| Test stage (`aide-test` skill) | Phase 3 |
 | deepcode-cli install (`install-deepcode-cli.sh`) | Done |
 | deepcode-cli update (`update-deepcode-cli.sh`) | Done |
 
