@@ -18,7 +18,7 @@ REMOTE_URL="$2"
 FUNCTIONAL_PATHS=("skills/" "aide-core/" "templates/" "hooks/")
 
 # Detect default branch
-DEFAULT_BRANCH=$(git remote show origin 2>/dev/null | grep 'HEAD branch' | awk '{print $NF}')
+DEFAULT_BRANCH=$(git remote show origin 2>/dev/null | grep -E 'HEAD (branch|分支)' | awk '{print $NF}' || true)
 [ -z "$DEFAULT_BRANCH" ] && DEFAULT_BRANCH="master"
 
 while read -r LOCAL_REF LOCAL_SHA REMOTE_REF REMOTE_SHA; do
