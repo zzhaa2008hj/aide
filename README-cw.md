@@ -13,18 +13,20 @@ curl -sSL https://raw.githubusercontent.com/zzhaa2008hj/aide/develop/skills/aide
 ```
 
 This script:
-1. Sets up `.codewhale/commands/aide.md` — enables `/aide` slash autocomplete
-2. Prints the `/skill install` command to run in CodeWhale
+1. Writes `.aide/version` — version tracking (via `plugin.json`)
+2. Sets up `.codewhale/commands/aide.md` — enables `/aide` slash autocomplete
+3. Copies `update.sh` to `.aide/update-codewhale.sh` — future upgrades
+4. Prints the `/skill install` command to run in CodeWhale
 
 After the script, run the printed command in your CodeWhale session to install the skill. Then invoke via `/aide "<description>"`. Typing `/a` in the composer will show the autocomplete hint.
 
 ## Update
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/zzhaa2008hj/aide/develop/skills/aide-codewhale/update.sh | bash
+bash .aide/update-codewhale.sh
 ```
 
-Refreshes the user command template, then run `/skill update aide` in CodeWhale.
+Checks `.aide/version` against the latest, refreshes the user command, prints `/skill update aide`.
 
 ## Differences from deepcode-cli
 
