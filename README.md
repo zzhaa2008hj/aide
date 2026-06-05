@@ -157,6 +157,8 @@ The pre-commit hook automatically bumps `plugin.json` + `marketplace.json` when 
 
 ### Done
 
+### Done
+
 | Feature | Status |
 |---------|--------|
 | Orchestrator (CC + deepcode-cli) | Done |
