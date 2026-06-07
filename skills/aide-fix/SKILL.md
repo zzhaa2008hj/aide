@@ -124,17 +124,7 @@ Report findings briefly to establish context.
    Working on <ORIG_BRANCH>. Fix artifacts will be committed here directly.
    ```
 
-### Step 2: Read conventions
-
-Read the AIDE conventions document to understand project patterns. Find it by searching for `aide-core/conventions.md` in these locations (in order):
-
-1. `~/.claude/plugins/cache/aide/aide/*/aide-core/conventions.md` (installed via claude plugin install)
-2. `.claude/plugins/aide/aide-core/conventions.md` (project directory)
-3. `.claude/aide/aide-core/conventions.md` (legacy)
-
-If found, read it and apply relevant conventions. If not found, proceed without it.
-
-### Step 3: Load configuration
+### Step 2: Load configuration
 
 Read configuration from `.aide/config.yaml`. If the file does not exist or cannot be read, use the following hardcoded defaults:
 
@@ -163,7 +153,7 @@ fix:
 
 Unknown gate types are treated as `confirm` with a warning.
 
-### Step 4: Initialize state
+### Step 3: Initialize state
 
 Write `.aide/fix-state.json` with the following schema:
 
@@ -201,13 +191,13 @@ with open('.aide/fix-state.json', 'w') as f:
 "
 ```
 
-### Step 5: Create output directories
+### Step 4: Create output directories
 
 ```bash
 mkdir -p .aide/fix/output/1-analyze .aide/fix/output/2-implement .aide/fix/output/3-test
 ```
 
-### Step 6: Announce pipeline start
+### Step 5: Announce pipeline start
 
 ```
 Starting aide-fix pipeline for: <description>
