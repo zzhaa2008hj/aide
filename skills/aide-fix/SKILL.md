@@ -236,9 +236,9 @@ Trace the bug from its symptom to its root cause:
 
 Be thorough but focused. Do NOT get sidetracked by unrelated code.
 
-### Step 1.2.5: DeepCode Assisted Analysis (MANDATORY)
+### Step 1.2.5: Code Analysis (MANDATORY)
 
-**Goal**: Augment manual tracing with your native static analysis capabilities. You are running inside deepcode-cli — use its built-in analysis to surface issues manual search may miss (null risks, resource leaks, concurrency bugs, control flow anomalies).
+**Goal**: Augment manual tracing with static analysis. Use your code analysis capabilities to surface issues manual search may miss (null risks, resource leaks, concurrency bugs, control flow anomalies).
 
 Based on the target files identified in Step 1.2, perform a focused analysis with these bug-hunting lenses:
 
@@ -253,7 +253,7 @@ For each finding, cross-reference with the bug symptoms from Step 1.1:
 - **Suspicious proximity** (finding in same file/function, different issue) → note in scope fence, may need attention
 - **Unrelated** → ignore, don't let it expand scope
 
-Record relevant findings in the analyze report under a **DeepCode findings** section. Findings are **advisory** — they inform the diagnosis but do not replace manual tracing. The root cause must still be verified by reading and understanding the code.
+Record relevant findings in the analyze report under a **Code Analysis findings** section. Findings are **advisory** — they inform the diagnosis but do not replace manual tracing. The root cause must still be verified by reading and understanding the code.
 
 ### Step 1.3: Determine scope fence
 
@@ -291,7 +291,7 @@ Write BOTH outputs — `.md` for human review and `.json` for AI consumption.
 
 **Risk:** low | medium | high
 
-**DeepCode CLI:** <N> issues found in target area, <M> potentially related to this bug
+**Code Analysis:** <N> issues found in target area, <M> potentially related to this bug
 
 **Reasoning:** <1-2 sentences explaining the diagnosis and why this is the minimal fix>
 ```
@@ -306,7 +306,7 @@ Write BOTH outputs — `.md` for human review and `.json` for AI consumption.
     {"file": "path/to/file1.ext", "change": "<what needs to change>"}
   ],
   "risk": "low|medium|high",
-  "deepcode": {
+  "code_analysis": {
     "issues_found": 0,
     "issues_related": 0
   },
@@ -323,7 +323,7 @@ data = {
     'root_cause': '<root cause>',
     'files_to_modify': [{'file': '<path>', 'change': '<desc>'}],
     'risk': 'low|medium|high',
-    'deepcode': {'issues_found': 0, 'issues_related': 0},
+    'code_analysis': {'issues_found': 0, 'issues_related': 0},
     'reasoning': '<reasoning>'
 }
 with open('.aide/fix/output/1-analyze/{date}-{slug}-analyze.json', 'w') as f:
