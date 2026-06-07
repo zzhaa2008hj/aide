@@ -87,8 +87,8 @@ Uses independent state tracking (`.aide/fix-state.json`), branch prefix (`aide-f
 
 All orchestrators include mandatory code analysis stages:
 
-- **Stage 3 (implement)**: DeepCode Analysis scans all changed files for correctness, security, code quality, and style issues
-- **Stage 4 (test)**: DeepCode Verification performs final comprehensive analysis — critical findings downgrade the test verdict from pass to fail
+- **Stage 3 (implement)**: Code Analysis scans all changed files for correctness, security, code quality, and style issues
+- **Stage 4 (test)**: Code Verification performs final comprehensive analysis — critical findings downgrade the test verdict from pass to fail
 
 ## Project Structure
 
@@ -203,10 +203,10 @@ The pre-commit hook automatically bumps `plugin.json` + `marketplace.json` when 
 | Pipeline discipline guards (state machine enforcement) | Done |
 | Shared pipeline protocol (deduplicated orchestrators) | Done |
 | Version management (pre-commit + pre-push hooks) | Done |
-| Fix pipeline (`/aide-fix`, analyze→implement→test) | Done |
+| Fix pipeline (`/aide-fix`, analyze→implement→test, backend-agnostic) | Done |
 | Fix pipeline resume (state file detection) | Done |
-| DeepCode Analysis in implement stage (all orchestrators) | Done |
-| DeepCode Verification in test stage (all orchestrators) | Done |
+| Code Analysis in implement stage (all orchestrators) | Done |
+| Code Verification in test stage (all orchestrators) | Done |
 | CodeWhale orchestrator (`aide-codewhale`) | Done |
 
 ### Planned / TODO
