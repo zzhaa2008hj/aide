@@ -30,7 +30,7 @@ Topic: 让 aide-fix 在符合 CodeWhale 设计规范的前提下，在 CodeWhale
 
 **位置**：第 127–135 行
 
-**当前**：搜索并读取外部 `aide-core/conventions.md` 文件（17行逻辑）。
+**当前**：搜索并读取外部 `aide-core/conventions.md` 文件（~10行逻辑，含3个搜索路径分支）。
 
 **改为**：删除整个 Step 2。Conventions 中的关键规则已内联在 SKILL.md 中：
 - 分支命名 `aide-fix/<slug>` — Step 1 已定义
