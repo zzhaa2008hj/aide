@@ -14,18 +14,19 @@ curl -sSL https://raw.githubusercontent.com/zzhaa2008hj/aide/master/skills/aide-
 curl -sSL https://raw.githubusercontent.com/zzhaa2008hj/aide/master/skills/aide-codewhale/install.sh | AIDE_REF=develop bash
 ```
 
-This script installs **two** skills directly to `.agents/skills/` (project-local):
+This script installs **two** skills to `~/.codewhale/` (global by default):
 1. Writes `.aide/version` — version tracking (via `plugin.json`)
-2. Sets up `.codewhale/commands/aide.md` + `.codewhale/commands/aide-fix.md` — slash autocomplete
-3. Downloads both `aide` and `aide-fix` SKILL.md to `.agents/skills/` — auto-discovered on next start
-4. Copies `update.sh` to `.aide/update-codewhale.sh` — future upgrades (updates both skills)
+2. Sets up slash commands in `~/.codewhale/commands/` — autocomplete for both skills
+3. Downloads `aide` + `aide-fix` SKILL.md to `~/.codewhale/skills/`
+4. Copies `update.sh` to `.aide/update-codewhale.sh` — future upgrades
+5. Verifies all 4 files were written successfully
 
-After the script:
-- Both skills are in `.agents/skills/` — CodeWhale auto-discovers them on next start
-- No `/skill install` needed
-- Set `SKILLS_DIR=~/.codewhale/skills` for global install instead
-- Invoke via `/aide "<description>"` or `/aide-fix "<bug description>"`
-- Typing `/a` in the composer will show both autocomplete hints
+For project-local install:
+```bash
+SKILLS_DIR=.agents/skills COMMANDS_DIR=.codewhale/commands bash install.sh
+```
+
+After the script, restart CodeWhale — both skills are auto-discovered. Invoke via `/aide "<description>"` or `/aide-fix "<bug description>"`.
 
 ## Update
 
