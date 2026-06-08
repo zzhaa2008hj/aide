@@ -47,14 +47,20 @@ EOF
 
 echo "  [done]  $COMMANDS_DIR/aide.md"
 
-# Step 3: Install aide-fix skill (direct file placement, bypasses /skill install single-skill limit)
-echo "[3/6] Install aide-fix skill..."
+# Step 3: Install aide skill (direct file placement)
+echo "[3/6] Install aide skill..."
+mkdir -p "$SKILLS_DIR/aide"
+curl -sSL -o "$SKILLS_DIR/aide/SKILL.md" "${RAW_BASE}/skills/aide-codewhale/SKILL.md" 2>/dev/null
+echo "  [done]  $SKILLS_DIR/aide/SKILL.md"
+
+# Step 4: Install aide-fix skill
+echo "[4/6] Install aide-fix skill..."
 mkdir -p "$SKILLS_DIR/aide-fix"
 curl -sSL -o "$SKILLS_DIR/aide-fix/SKILL.md" "${RAW_BASE}/skills/aide-fix/SKILL.md" 2>/dev/null
 echo "  [done]  $SKILLS_DIR/aide-fix/SKILL.md"
 
-# Step 4: Install aide-fix slash command
-echo "[4/6] Install aide-fix slash command..."
+# Step 5: Install aide-fix slash command
+echo "[5/6] Install aide-fix slash command..."
 cat > "$COMMANDS_DIR/aide-fix.md" << 'EOF'
 ---
 description: AIDE 修复流水线 — analyze → implement → test
@@ -65,19 +71,11 @@ $aide-fix $ARGUMENTS
 EOF
 echo "  [done]  $COMMANDS_DIR/aide-fix.md"
 
-# Step 5: Install update script for future upgrades
-echo "[5/6] Install update script..."
+# Step 6: Install update script for future upgrades
+echo "[6/6] Install update script..."
 curl -sSL -o .aide/update-codewhale.sh "${RAW_BASE}/skills/aide-codewhale/update.sh" 2>/dev/null
 chmod +x .aide/update-codewhale.sh
 echo "  [done]  .aide/update-codewhale.sh"
-
-# Step 6: Print /skill install command
-echo "[6/6] Install the main skill in CodeWhale:"
-echo ""
-echo "  Run this in your CodeWhale session:"
-echo ""
-echo "    /skill install https://github.com/zzhaa2008hj/aide/archive/refs/heads/${AIDE_REF}.tar.gz"
-echo ""
 
 echo "=== Installation complete ==="
 echo ""
@@ -87,9 +85,7 @@ echo "  Commands:  $COMMANDS_DIR/aide.md (autocomplete ready)"
 echo "             $COMMANDS_DIR/aide-fix.md (autocomplete ready)"
 echo "  Update:    bash .aide/update-codewhale.sh"
 echo ""
-echo "Next: run '/skill install' in CodeWhale (see above) to register the main aide skill."
-echo "      aide-fix is already in $SKILLS_DIR/aide-fix/ — auto-discovered on next start."
-echo ""
+echo "Both skills installed to $SKILLS_DIR — auto-discovered on next CodeWhale start."
 echo "To install globally instead: SKILLS_DIR=~/.codewhale/skills bash ..."
 echo ""
 echo "Type /aide <task> or /aide-fix <bug> in CodeWhale."

@@ -14,16 +14,16 @@ curl -sSL https://raw.githubusercontent.com/zzhaa2008hj/aide/master/skills/aide-
 curl -sSL https://raw.githubusercontent.com/zzhaa2008hj/aide/master/skills/aide-codewhale/install.sh | AIDE_REF=develop bash
 ```
 
-This script installs **two** skills:
+This script installs **two** skills directly to `.agents/skills/` (project-local):
 1. Writes `.aide/version` — version tracking (via `plugin.json`)
 2. Sets up `.codewhale/commands/aide.md` + `.codewhale/commands/aide-fix.md` — slash autocomplete
-3. Downloads `aide-fix` SKILL.md directly to `.agents/skills/aide-fix/` — auto-discovered on next start (set `SKILLS_DIR=~/.codewhale/skills` for global install)
+3. Downloads both `aide` and `aide-fix` SKILL.md to `.agents/skills/` — auto-discovered on next start
 4. Copies `update.sh` to `.aide/update-codewhale.sh` — future upgrades (updates both skills)
-5. Prints the `/skill install` command for the main `aide` skill
 
 After the script:
-- Run the printed `/skill install` command in your CodeWhale session to register the main `aide` skill
-- `aide-fix` is already in place — CodeWhale auto-discovers it on next session start
+- Both skills are in `.agents/skills/` — CodeWhale auto-discovers them on next start
+- No `/skill install` needed
+- Set `SKILLS_DIR=~/.codewhale/skills` for global install instead
 - Invoke via `/aide "<description>"` or `/aide-fix "<bug description>"`
 - Typing `/a` in the composer will show both autocomplete hints
 
@@ -49,15 +49,15 @@ The fix pipeline is a lightweight alternative for rapid bug fixes:
 | 2     | implement | Scope-fenced code changes           |
 | 3     | test      | Verify + auto-retry (max 2)        |
 
-Invoke via `/aide-fix "<bug description>"`. Backend-agnostic — works identically under both deepcode-cli and CodeWhale. The skill file is placed into `.agents/skills/aide-fix/` by the install script (bypasses `/skill install` single-skill limitation). Set `SKILLS_DIR=~/.codewhale/skills` for global install.
+Invoke via `/aide-fix "<bug description>"`. Backend-agnostic — works identically under both deepcode-cli and CodeWhale. Both `aide` and `aide-fix` are installed together by the install script.
 
 ## Differences from deepcode-cli
 
 | Aspect | deepcode-cli | CodeWhale |
 |--------|-------------|-----------|
 | Implement stage | Serial task execution | Parallel subagent dispatch via `agent_open` (max 3 per batch) |
-| Install | curl + bash | `curl -sSL ... \| bash` + `/skill install` |
-| Update | `bash .aide/update-deepcode-cli.sh` | `curl -sSL ... \| bash` + `/skill update aide` |
+| Install | curl + bash | `curl -sSL ... \| bash` (both skills) |
+| Update | `bash .aide/update-deepcode-cli.sh` | `bash .aide/update-codewhale.sh` (both skills) |
 | Skill discovery | `.agents/skills/` | `.agents/skills/` → `~/.codewhale/skills/` |
 | Orchestrator | Reads external stage skills | Fully self-contained (all stages inline) |
 | Pipeline protocol | References `aide-core/pipeline-protocol.md` | All rules inlined in SKILL.md |

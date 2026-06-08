@@ -2,9 +2,8 @@
 set -euo pipefail
 # update.sh — Update AIDE for CodeWhale
 #
-# Checks the installed version against the latest, refreshes the user
-# command template, and prints the /skill update command. Mirrors the
-# deepcode-cli update pattern.
+# Checks the installed version against the latest, refreshes both aide
+# and aide-fix skill files, slash commands, and the update script itself.
 #
 # Usage:
 #   bash .aide/update-codewhale.sh
@@ -44,8 +43,8 @@ else
 fi
 echo ""
 
-# Step 2: Refresh the user command
-echo "[2/5] Refresh slash command..."
+# Step 2: Refresh slash commands
+echo "[2/5] Refresh slash commands..."
 mkdir -p "$COMMANDS_DIR"
 
 cat > "$COMMANDS_DIR/aide.md" << 'EOF'
@@ -57,16 +56,6 @@ argument-hint: "<任务描述>"
 $aide $ARGUMENTS
 EOF
 
-echo "  [done]  $COMMANDS_DIR/aide.md"
-
-# Step 2b: Refresh aide-fix skill file
-echo "[2b/5] Refresh aide-fix skill..."
-mkdir -p "$SKILLS_DIR/aide-fix"
-curl -sSL -o "$SKILLS_DIR/aide-fix/SKILL.md" "${RAW_BASE}/skills/aide-fix/SKILL.md" 2>/dev/null
-echo "  [done]  $SKILLS_DIR/aide-fix/SKILL.md"
-
-# Step 2c: Refresh aide-fix slash command
-echo "[2c/5] Refresh aide-fix slash command..."
 cat > "$COMMANDS_DIR/aide-fix.md" << 'EOF'
 ---
 description: AIDE 修复流水线 — analyze → implement → test
@@ -75,25 +64,33 @@ argument-hint: "<bug描述>"
 
 $aide-fix $ARGUMENTS
 EOF
+
+echo "  [done]  $COMMANDS_DIR/aide.md"
 echo "  [done]  $COMMANDS_DIR/aide-fix.md"
 echo ""
 
-# Step 3: Refresh the update script itself + print /skill update
-echo "[3/5] Update skills in CodeWhale:"
+# Step 3: Refresh aide skill file
+echo "[3/5] Refresh aide skill..."
+mkdir -p "$SKILLS_DIR/aide"
+curl -sSL -o "$SKILLS_DIR/aide/SKILL.md" "${RAW_BASE}/skills/aide-codewhale/SKILL.md" 2>/dev/null
+echo "  [done]  $SKILLS_DIR/aide/SKILL.md"
+
+# Step 4: Refresh aide-fix skill file
+echo "[4/5] Refresh aide-fix skill..."
+mkdir -p "$SKILLS_DIR/aide-fix"
+curl -sSL -o "$SKILLS_DIR/aide-fix/SKILL.md" "${RAW_BASE}/skills/aide-fix/SKILL.md" 2>/dev/null
+echo "  [done]  $SKILLS_DIR/aide-fix/SKILL.md"
 echo ""
 
+# Step 5: Refresh the update script itself
+echo "[5/5] Refresh update script..."
 curl -sSL -o .aide/update-codewhale.sh "${RAW_BASE}/skills/aide-codewhale/update.sh" 2>/dev/null
 chmod +x .aide/update-codewhale.sh
-
-echo "  Run this in your CodeWhale session to update main aide skill:"
-echo ""
-echo "    /skill update aide"
-echo ""
-echo "  aide-fix is updated directly — auto-discovered on next session start."
+echo "  [done]  .aide/update-codewhale.sh"
 echo ""
 
 echo "=== Update complete ==="
 echo ""
 echo "  Version:   $LATEST"
-echo "  Skills:    aide + aide-fix"
+echo "  Skills:    aide + aide-fix → $SKILLS_DIR"
 echo "  Update:    bash .aide/update-codewhale.sh"
