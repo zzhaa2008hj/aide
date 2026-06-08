@@ -277,44 +277,27 @@ Assess the fix risk based on:
 
 ### Step 1.5: Write analyze output
 
-Write BOTH outputs — `.md` for human review and `.json` for AI consumption.
+Write BOTH outputs. Each uses an explicit write command — do NOT skip either file.
 
-**Human-readable** — `.aide/fix/output/1-analyze/{date}-{slug}-analyze.md`:
-
-```markdown
+**1. Write the markdown** via:
+```bash
+cat > .aide/fix/output/1-analyze/{date}-{slug}-analyze.md << 'ENDOFFILE'
 ## Analyze Result: <brief summary>
 
-**Root cause:** <one sentence describing the root cause>
+**Root cause:** <root cause>
 
 **Files to modify:**
-- `path/to/file.ext` — <one sentence describing the change needed per file>
+- `path/to/file.ext` — <change description>
 
-**Risk:** low | medium | high
+**Risk:** <low|medium|high>
 
 **Code Analysis:** <N> issues found in target area, <M> potentially related to this bug
 
-**Reasoning:** <1-2 sentences explaining the diagnosis and why this is the minimal fix>
+**Reasoning:** <1-2 sentences>
+ENDOFFILE
 ```
 
-**Machine-readable** — `.aide/fix/output/1-analyze/{date}-{slug}-analyze.json`:
-
-```json
-{
-  "slug": "<slug>",
-  "root_cause": "<one sentence>",
-  "files_to_modify": [
-    {"file": "path/to/file1.ext", "change": "<what needs to change>"}
-  ],
-  "risk": "low|medium|high",
-  "code_analysis": {
-    "issues_found": 0,
-    "issues_related": 0
-  },
-  "reasoning": "<1-2 sentences>"
-}
-```
-
-Write the JSON via:
+**2. Write the JSON** via:
 ```bash
 python3 -c "
 import json
@@ -330,6 +313,11 @@ with open('.aide/fix/output/1-analyze/{date}-{slug}-analyze.json', 'w') as f:
     json.dump(data, f, indent=2)
     f.write('\n')
 "
+```
+
+After writing, verify both files exist:
+```bash
+ls -la .aide/fix/output/1-analyze/{date}-{slug}-analyze.md .aide/fix/output/1-analyze/{date}-{slug}-analyze.json
 ```
 
 Where `{date}` is `YYYY-MM-DD` and `{slug}` comes from `fix-state.json`.
@@ -449,11 +437,11 @@ Apply changes with these constraints:
 
 ### Step 2.4: Write implement summary
 
-Write BOTH outputs — `.md` for human review and `.json` for AI consumption.
+Write BOTH outputs. Each uses an explicit write command — do NOT skip either file.
 
-**Human-readable** — `.aide/fix/output/2-implement/{date}-{slug}-implement.md`:
-
-```markdown
+**1. Write the markdown** via:
+```bash
+cat > .aide/fix/output/2-implement/{date}-{slug}-implement.md << 'ENDOFFILE'
 ## Implement Result: <brief summary>
 
 **Changes applied:**
@@ -463,26 +451,10 @@ Write BOTH outputs — `.md` for human review and `.json` for AI consumption.
 **Diff summary:** <+N/-M lines across K files>
 
 **Scope fence compliance:** Verified — all changes within fence
+ENDOFFILE
 ```
 
-**Machine-readable** — `.aide/fix/output/2-implement/{date}-{slug}-implement.json`:
-
-```json
-{
-  "slug": "<slug>",
-  "changes": [
-    {"file": "path/to/file1.ext", "change": "<what changed>"}
-  ],
-  "diff_summary": {
-    "lines_added": 0,
-    "lines_removed": 0,
-    "files_changed": 0
-  },
-  "scope_fence_compliance": true
-}
-```
-
-Write the JSON via:
+**2. Write the JSON** via:
 ```bash
 python3 -c "
 import json
@@ -496,6 +468,11 @@ with open('.aide/fix/output/2-implement/{date}-{slug}-implement.json', 'w') as f
     json.dump(data, f, indent=2)
     f.write('\n')
 "
+```
+
+After writing, verify both files exist:
+```bash
+ls -la .aide/fix/output/2-implement/{date}-{slug}-implement.md .aide/fix/output/2-implement/{date}-{slug}-implement.json
 ```
 
 ### Step 2.5: Proceed to Stage 3
@@ -626,28 +603,29 @@ If tests are still failing after reaching `test_retries >= 2` (2 retries exhaust
 
 ### Step 3.5: Write test report
 
-Write BOTH outputs — `.md` for human review and `.json` for AI consumption.
+Write BOTH outputs. Each uses an explicit write command — do NOT skip either file.
 
-**Human-readable** — `.aide/fix/output/3-test/{date}-{slug}-test-report.md`:
-
-```markdown
+**1. Write the markdown** via:
+```bash
+cat > .aide/fix/output/3-test/{date}-{slug}-test-report.md << 'ENDOFFILE'
 ## Test Report: <slug>
 
 **Test command:** `<test command>`
 
-**Result:** pass | fail (with X retries)
+**Result:** <pass|fail> (<N> retries)
 
 **Summary:** <N> passed, <M> failed, <S> skipped
 
 **Retries:** <N> attempt(s)
 
 **Details:**
-- <failure detail or "All tests passed">
+- <detail or "All tests passed">
 
 **Scope fence compliance:** Verified
+ENDOFFILE
 ```
 
-**Machine-readable** — `.aide/fix/output/3-test/{date}-{slug}-test-report.json`:
+**2. Write the JSON** via:
 
 ```json
 {
@@ -682,6 +660,11 @@ with open('.aide/fix/output/3-test/{date}-{slug}-test-report.json', 'w') as f:
     json.dump(data, f, indent=2)
     f.write('\n')
 "
+```
+
+After writing, verify both files exist:
+```bash
+ls -la .aide/fix/output/3-test/{date}-{slug}-test-report.md .aide/fix/output/3-test/{date}-{slug}-test-report.json
 ```
 
 ### Step 3.6: Gate 3 — after_fix
