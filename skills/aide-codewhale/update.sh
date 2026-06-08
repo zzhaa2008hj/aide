@@ -15,7 +15,7 @@ set -euo pipefail
 AIDE_REF="${AIDE_REF:-master}"
 RAW_BASE="https://raw.githubusercontent.com/zzhaa2008hj/aide/${AIDE_REF}"
 COMMANDS_DIR="${COMMANDS_DIR:-.codewhale/commands}"
-SKILLS_DIR="${SKILLS_DIR:-$HOME/.codewhale/skills}"
+SKILLS_DIR="${SKILLS_DIR:-.agents/skills}"
 
 echo "=== AIDE Update for CodeWhale ==="
 echo ""

@@ -17,7 +17,7 @@ curl -sSL https://raw.githubusercontent.com/zzhaa2008hj/aide/master/skills/aide-
 This script installs **two** skills:
 1. Writes `.aide/version` — version tracking (via `plugin.json`)
 2. Sets up `.codewhale/commands/aide.md` + `.codewhale/commands/aide-fix.md` — slash autocomplete
-3. Downloads `aide-fix` SKILL.md directly to `~/.codewhale/skills/aide-fix/` — auto-discovered on next start
+3. Downloads `aide-fix` SKILL.md directly to `.agents/skills/aide-fix/` — auto-discovered on next start (set `SKILLS_DIR=~/.codewhale/skills` for global install)
 4. Copies `update.sh` to `.aide/update-codewhale.sh` — future upgrades (updates both skills)
 5. Prints the `/skill install` command for the main `aide` skill
 
@@ -49,7 +49,7 @@ The fix pipeline is a lightweight alternative for rapid bug fixes:
 | 2     | implement | Scope-fenced code changes           |
 | 3     | test      | Verify + auto-retry (max 2)        |
 
-Invoke via `/aide-fix "<bug description>"`. Backend-agnostic — works identically under both deepcode-cli and CodeWhale. The skill file is placed directly into `~/.codewhale/skills/aide-fix/` by the install script (bypasses `/skill install` single-skill limitation).
+Invoke via `/aide-fix "<bug description>"`. Backend-agnostic — works identically under both deepcode-cli and CodeWhale. The skill file is placed into `.agents/skills/aide-fix/` by the install script (bypasses `/skill install` single-skill limitation). Set `SKILLS_DIR=~/.codewhale/skills` for global install.
 
 ## Differences from deepcode-cli
 
