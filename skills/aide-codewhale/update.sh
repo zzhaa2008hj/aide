@@ -15,12 +15,13 @@ set -euo pipefail
 AIDE_REF="${AIDE_REF:-master}"
 RAW_BASE="https://raw.githubusercontent.com/zzhaa2008hj/aide/${AIDE_REF}"
 COMMANDS_DIR="${COMMANDS_DIR:-.codewhale/commands}"
+SKILLS_DIR="${SKILLS_DIR:-$HOME/.codewhale/skills}"
 
 echo "=== AIDE Update for CodeWhale ==="
 echo ""
 
 # Step 1: Check current version
-echo "[1/3] Check versions..."
+echo "[1/5] Check versions..."
 CURRENT="unknown"
 if [ -f .aide/version ]; then
     CURRENT=$(cat .aide/version)
@@ -44,7 +45,7 @@ fi
 echo ""
 
 # Step 2: Refresh the user command
-echo "[2/3] Refresh slash command..."
+echo "[2/5] Refresh slash command..."
 mkdir -p "$COMMANDS_DIR"
 
 cat > "$COMMANDS_DIR/aide.md" << 'EOF'
@@ -57,21 +58,42 @@ $aide $ARGUMENTS
 EOF
 
 echo "  [done]  $COMMANDS_DIR/aide.md"
+
+# Step 2b: Refresh aide-fix skill file
+echo "[2b/5] Refresh aide-fix skill..."
+mkdir -p "$SKILLS_DIR/aide-fix"
+curl -sSL -o "$SKILLS_DIR/aide-fix/SKILL.md" "${RAW_BASE}/skills/aide-fix/SKILL.md" 2>/dev/null
+echo "  [done]  $SKILLS_DIR/aide-fix/SKILL.md"
+
+# Step 2c: Refresh aide-fix slash command
+echo "[2c/5] Refresh aide-fix slash command..."
+cat > "$COMMANDS_DIR/aide-fix.md" << 'EOF'
+---
+description: AIDE 修复流水线 — analyze → implement → test
+argument-hint: "<bug描述>"
+---
+
+$aide-fix $ARGUMENTS
+EOF
+echo "  [done]  $COMMANDS_DIR/aide-fix.md"
 echo ""
 
 # Step 3: Refresh the update script itself + print /skill update
-echo "[3/3] Update the skill in CodeWhale:"
+echo "[3/5] Update skills in CodeWhale:"
 echo ""
 
 curl -sSL -o .aide/update-codewhale.sh "${RAW_BASE}/skills/aide-codewhale/update.sh" 2>/dev/null
 chmod +x .aide/update-codewhale.sh
 
-echo "  Run this in your CodeWhale session:"
+echo "  Run this in your CodeWhale session to update main aide skill:"
 echo ""
 echo "    /skill update aide"
+echo ""
+echo "  aide-fix is updated directly — auto-discovered on next session start."
 echo ""
 
 echo "=== Update complete ==="
 echo ""
-echo "  Version:  $LATEST"
-echo "  Update:   bash .aide/update-codewhale.sh"
+echo "  Version:   $LATEST"
+echo "  Skills:    aide + aide-fix"
+echo "  Update:    bash .aide/update-codewhale.sh"

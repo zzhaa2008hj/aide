@@ -14,13 +14,18 @@ curl -sSL https://raw.githubusercontent.com/zzhaa2008hj/aide/master/skills/aide-
 curl -sSL https://raw.githubusercontent.com/zzhaa2008hj/aide/master/skills/aide-codewhale/install.sh | AIDE_REF=develop bash
 ```
 
-This script:
+This script installs **two** skills:
 1. Writes `.aide/version` — version tracking (via `plugin.json`)
-2. Sets up `.codewhale/commands/aide.md` — enables `/aide` slash autocomplete
-3. Copies `update.sh` to `.aide/update-codewhale.sh` — future upgrades
-4. Prints the `/skill install` command to run in CodeWhale
+2. Sets up `.codewhale/commands/aide.md` + `.codewhale/commands/aide-fix.md` — slash autocomplete
+3. Downloads `aide-fix` SKILL.md directly to `~/.codewhale/skills/aide-fix/` — auto-discovered on next start
+4. Copies `update.sh` to `.aide/update-codewhale.sh` — future upgrades (updates both skills)
+5. Prints the `/skill install` command for the main `aide` skill
 
-After the script, run the printed command in your CodeWhale session to install the skill. Then invoke via `/aide "<description>"`. Typing `/a` in the composer will show the autocomplete hint.
+After the script:
+- Run the printed `/skill install` command in your CodeWhale session to register the main `aide` skill
+- `aide-fix` is already in place — CodeWhale auto-discovers it on next session start
+- Invoke via `/aide "<description>"` or `/aide-fix "<bug description>"`
+- Typing `/a` in the composer will show both autocomplete hints
 
 ## Update
 
@@ -32,7 +37,19 @@ bash .aide/update-codewhale.sh
 AIDE_REF=develop bash .aide/update-codewhale.sh
 ```
 
-Checks `.aide/version` against the latest, refreshes the user command, prints `/skill update aide`.
+Checks `.aide/version` against the latest, refreshes both `aide` and `aide-fix` skill files and slash commands, prints `/skill update aide`.
+
+## Fix Pipeline (`/aide-fix`)
+
+The fix pipeline is a lightweight alternative for rapid bug fixes:
+
+| Order | Stage     | Description                         |
+|-------|-----------|-------------------------------------|
+| 1     | analyze   | Root cause → scope fence            |
+| 2     | implement | Scope-fenced code changes           |
+| 3     | test      | Verify + auto-retry (max 2)        |
+
+Invoke via `/aide-fix "<bug description>"`. Backend-agnostic — works identically under both deepcode-cli and CodeWhale. The skill file is placed directly into `~/.codewhale/skills/aide-fix/` by the install script (bypasses `/skill install` single-skill limitation).
 
 ## Differences from deepcode-cli
 
@@ -44,7 +61,7 @@ Checks `.aide/version` against the latest, refreshes the user command, prints `/
 | Skill discovery | `.agents/skills/` | `.agents/skills/` → `~/.codewhale/skills/` |
 | Orchestrator | Reads external stage skills | Fully self-contained (all stages inline) |
 | Pipeline protocol | References `aide-core/pipeline-protocol.md` | All rules inlined in SKILL.md |
-| Invocation | `/aide` | `$aide` or `/aide` |
+| Invocation | `/aide`, `/aide-fix` | `$aide` or `/aide`, `$aide-fix` or `/aide-fix` |
 
 Stage-specific skills (`aide-spec`, `aide-plan`, `aide-test`) are shared between all orchestrators in the monorepo, but the CodeWhale orchestrator embeds all workflows inline so it works after a single `/skill install`.
 
