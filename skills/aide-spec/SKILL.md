@@ -161,6 +161,147 @@ Before writing files, create the output directory if it doesn't exist:
 mkdir -p .aide/output/1-spec/
 ```
 
+### Step 3.5: Reviewer Panel (MANDATORY when review_panel.enabled is true)
+
+**Goal**: Eliminate single-perspective blind spots by having 3 independent, context-isolated reviewers audit the spec draft from different lenses (edge cases, security, performance). Each reviewer only sees the spec draft + project context — they do NOT see each other's output.
+
+This step is inspired by deep-research's adversarial verification methodology.
+
+#### 3.5.1 Read configuration
+
+Read `.aide/config.yaml` and check `stages.spec.review_panel.enabled`:
+- If `false` or missing: skip Step 3.5 entirely. Set `review_trail.status = "disabled"` in spec.json. Proceed to Validation.
+- If `true`: continue to 3.5.2.
+
+#### 3.5.2 Prepare reviewer inputs
+
+Build the shared context block that all 3 reviewers receive. This block includes the project context summary from Stage 0.2 (tech stack, directory structure, key conventions), the full spec.md content, and the full spec.json content. The reviewer's task is to find **omitted** scenarios, conditions, constraints, and acceptance criteria — only gaps, no rehashing of existing content.
+
+Build 3 lens-specific prompts. Each reviewer agent MUST output ONLY a JSON object conforming to the gap report schema defined below.
+
+**Lens: edge_case** — examine boundary conditions, error paths, state transitions, concurrency/race conditions, and data boundaries (limits, sizes, rate limits).
+
+**Lens: security** — examine input validation completeness, authentication/authorization gaps, sensitive data exposure, insecure defaults, and dependency security.
+
+**Lens: performance** — examine large-data behavior, N+1 query risks, caching strategy gaps, resource consumption (connection pools, file handles), and slow-path identification.
+
+Each reviewer outputs:
+
+```json
+{
+  "lens": "<lens_id>",
+  "gaps": [
+    {
+      "id": "GAP-001",
+      "severity": "critical|warning|info",
+      "scope": "F001 或 global 或 missing_feature",
+      "category": "<lens-specific category>",
+      "title": "简短标题",
+      "description": "详细说明遗漏了什么、为什么重要",
+      "suggested_ac": "建议的验收标准（一句话）"
+    }
+  ]
+}
+```
+
+**Gap limits**: edge_case max 8, security max 5, performance max 5. Sort by severity (critical first). Quality over quantity — only report genuinely important omissions.
+
+**Category enums per lens:**
+- edge_case: `boundary`, `error_path`, `state_transition`, `concurrency`, `data_boundary`
+- security: `input_validation`, `authentication`, `authorization`, `data_exposure`, `insecure_default`, `dependency`
+- performance: `large_data`, `n_plus_one`, `caching`, `resource_consumption`, `slow_path`
+
+#### 3.5.3 Dispatch reviewers in parallel
+
+Use the Agent tool to dispatch 3 context-isolated agents simultaneously. Each agent receives the shared context block and exactly one lens-specific prompt. Pass the gap report schema via the Agent `schema` parameter to enforce structured output.
+
+**Isolation**: Each Agent call is a separate invocation — agents do NOT share context and cannot see each other's output. This is the default Agent behavior (fresh context per call). No worktree isolation is needed since reviewers are read-only.
+
+**Timeout**: Each reviewer times out at 60s. If an agent fails or times out, mark it in `reviewers_failed`.
+
+**Output collection**: Each reviewer returns a validated JSON object (enforced by the `schema` parameter). Collect all results.
+
+#### 3.5.4 Check min_reviewers
+
+Count successful reviewers (those that returned valid output). If count < `min_reviewers` (from config, default 2):
+- Set `review_trail.status = "degraded"`
+- Set all features' `confidence = "unreviewed"`
+- Write review_trail with `reviewers_ran` and `reviewers_failed`
+- Report: "Review panel degraded: only N/M reviewers succeeded. Skipping review. Spec confidence: unreviewed."
+- Proceed to Validation (skip 3.5.5–3.5.9).
+
+#### 3.5.5 Merge and deduplicate gaps
+
+Collect all gaps from all successful reviewers into a single list. Deduplicate by semantic similarity: if two gaps from different reviewers describe essentially the same omission, merge them into one entry. Note which lenses flagged each gap (for traceability only — the merged gap keeps one lens as primary).
+
+Sort merged gaps by severity: critical → warning → info.
+
+Set `review_trail.status = "completed"` if all 3 reviewers succeeded, `"partial"` otherwise.
+
+#### 3.5.6 Process each gap — spec writer decisions
+
+For each gap in the merged list (sorted by severity):
+
+**If gap.severity == "info"**:
+- Auto-accept. Append `suggested_ac` to the target feature's `acceptance_criteria` array (if `scope` is a feature_id). For `scope: global`, add to `constraints`. For `scope: missing_feature`, note as a potential new feature but do NOT auto-create it — flag for gate.
+- Record: `decision: "accepted"`, `decision_source: "auto"`, `new_ac_index: <index>`.
+
+**If gap.severity == "warning"**:
+- Evaluate the gap. Decide: accept or pending.
+- If accepted: same as above, but `decision_source: "writer"`.
+- If pending: `decision: "pending"`, `decision_source: "writer"`. Do NOT modify spec yet.
+- Warning gaps should NOT be rejected unless factually wrong — the reviewer is flagging real risks.
+
+**If gap.severity == "critical"**:
+- Evaluate the gap. Decide: accept, reject, or pending.
+- If accepted: apply to spec, `decision_source: "writer"`.
+- If rejected: record `reason`, `decision_source: "writer"`.
+- If pending: `decision: "pending"`, `decision_source: "writer"`.
+
+**Constraint**: After processing all gaps, every gap must have one of {accepted, rejected, pending}. No gap may be left undecided.
+
+#### 3.5.7 Update spec files with applied gaps
+
+For all accepted gaps:
+- If `scope` is a feature_id (e.g., "F001"): append `suggested_ac` to that feature's `acceptance_criteria` array in spec.json
+- If `scope` is "global": append `suggested_ac` to `constraints` array in spec.json
+
+Update `spec.md` to reflect the same additions (append new AC bullets to corresponding feature sections, add new constraints).
+
+#### 3.5.8 Compute confidence per feature
+
+For each feature in spec.json, assign confidence according to:
+
+| Condition | confidence |
+|-----------|-----------|
+| review_trail.status ∈ {degraded, disabled} | `unreviewed` |
+| No gap from any successful reviewer references this feature | `unreviewed` |
+| Feature has ≥1 critical gap (accepted or pending) | `low` |
+| Feature has warning gap(s), any pending | `low` |
+| Feature has warning gap(s), all accepted | `medium` |
+| Feature has only info gaps or zero gaps | `high` |
+
+Write the `confidence` value into each feature object in spec.json.
+
+#### 3.5.9 Write review_trail
+
+Construct the `review_trail` object conforming to the schema (see `aide-core/schemas/spec.schema.json`) and add it to spec.json.
+
+#### 3.5.10 Report summary
+
+Report the review panel results concisely:
+
+```
+## Reviewer Panel Complete
+
+Status: <status>  |  <N>/<M> reviewers succeeded
+Gaps: <total> found → <accepted> accepted, <rejected> rejected, <pending> pending
+
+Confidence: F001=<confidence>, F002=<confidence>, ...
+
+Pending gaps will be shown for your decision at the gate.
+```
+
 ## Validation
 
 Before reporting completion, **validate** the JSON output against the schema:
@@ -193,6 +334,7 @@ Once validation passes, report completion with a summary:
 - Number of constraints listed
 - Scope boundary summary
 - Brief mention of any notable clarifications made during the ambiguity step
+- Review Panel: N gaps found, M applied, K pending (if review_panel enabled)
 
 ## Important Guidelines
 
