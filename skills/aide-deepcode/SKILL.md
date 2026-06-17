@@ -41,27 +41,9 @@ Extract 3-5 keywords from the user's request, lowercase, hyphenate. Example: "Ad
 
 **You MUST ground all pipeline decisions in the existing project.** Read `aide-core/pipeline-protocol.md` (Section: Project Context Analysis) and follow the procedure there exactly. To locate `aide-core/`, check `~/.claude/plugins/cache/aide/aide/*/` first, then `.claude/plugins/aide/`.
 
-### 0.3 Record current branch
+### 0.3 Generate slug
 
-```bash
-ORIG_BRANCH=$(git branch --show-current 2>/dev/null || echo "main")
-echo "ORIG_BRANCH=$ORIG_BRANCH"
-```
-
-### 0.4 Branch decision
-
-Use `AskUserQuestion` with `required: true`:
-
-```
-Question: "Create a new aide/<slug> branch for this pipeline?"
-Header: "Branch"
-Options:
-  - "<ORIG_BRANCH> (Recommended)" — create aide/<slug> from current branch
-  - "skip" — stay on current branch, no isolation
-```
-
-- If user selects a branch name: `git checkout -b aide/<slug> <selected-branch>`
-- If `skip`: stay on `ORIG_BRANCH`, no branch creation
+The slug was generated in Step 0.1. It is used ONLY for naming pipeline output files. No branch is created — AIDE works directly on the current branch.
 
 ### 0.5 Initialize AIDE directories and state
 
@@ -73,7 +55,6 @@ Create `.aide/state.json`:
 
 ```json
 {
-  "pipeline": "<slug>",
   "slug": "<slug>",
   "current_stage": "spec",
   "completed_stages": [],
@@ -486,22 +467,7 @@ Branch: <current-branch>
 Output: .aide/output/
 ```
 
-### Merge decision
-
-If a branch was created (`aide/<slug>`):
-
-Use `AskUserQuestion`:
-
-```
-Question: "Merge aide/<slug> into a target branch?"
-Header: "Merge"
-Options:
-  - "<ORIG_BRANCH> (Recommended)" — merge back to original branch
-  - "skip (Recommended)" — no merge, artifacts stay on this branch
-```
-
-- Branch selected → `git checkout <target> && git merge aide/<slug>`
-- `skip` → done
+Pipeline artifacts committed to the current branch. No merge needed.
 
 ---
 

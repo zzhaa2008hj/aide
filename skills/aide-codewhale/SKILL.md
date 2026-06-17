@@ -109,16 +109,9 @@ Ground all pipeline decisions in the existing project:
 
 6. **Summarize findings** in a brief project context memo. This informs ALL subsequent stages.
 
-### 0.3 Record current branch
+### 0.3 Generate slug
 
-```bash
-ORIG_BRANCH=$(git branch --show-current 2>/dev/null || echo "main")
-echo "ORIG_BRANCH=$ORIG_BRANCH"
-```
-
-### 0.4 Branch decision
-
-Ask the user whether to create an `aide/<slug>` branch. If yes: `git checkout -b aide/<slug> $ORIG_BRANCH`. If no: stay on current branch.
+The slug was generated in Step 0.1. It is used ONLY for naming pipeline output files. No branch is created — AIDE works directly on the current branch.
 
 ### 0.5 Initialize AIDE directories and state
 
@@ -129,7 +122,6 @@ mkdir -p .aide/output/1-spec .aide/output/2-plan .aide/output/3-implement .aide/
 Create `.aide/state.json`:
 ```json
 {
-  "pipeline": "<slug>",
   "slug": "<slug>",
   "current_stage": "spec",
   "completed_stages": [],
@@ -197,7 +189,6 @@ When user selects `skip` on a `confirm_skip` gate: update `.aide/config.yaml` to
 After initialization, the state file should contain:
 ```json
 {
-  "pipeline": "<slug>",
   "slug": "<slug>",
   "current_stage": "spec",
   "completed_stages": [],
@@ -287,7 +278,6 @@ Process the `after_spec` gate per the loaded configuration. Ask the user to revi
 Update `.aide/state.json`:
 ```json
 {
-  "pipeline": "<slug>",
   "slug": "<slug>",
   "current_stage": "plan",
   "completed_stages": ["spec"],
@@ -363,7 +353,6 @@ Process the `after_plan` gate per the loaded configuration.
 Update `.aide/state.json`:
 ```json
 {
-  "pipeline": "<slug>",
   "slug": "<slug>",
   "current_stage": "implement",
   "completed_stages": ["spec", "plan"],
@@ -501,7 +490,6 @@ Schema rules:
 Update `.aide/state.json`:
 ```json
 {
-  "pipeline": "<slug>",
   "slug": "<slug>",
   "current_stage": "test",
   "completed_stages": ["spec", "plan", "implement"],
@@ -606,7 +594,6 @@ Read `verdict` from test-report.json:
 Update `.aide/state.json`:
 ```json
 {
-  "pipeline": "<slug>",
   "slug": "<slug>",
   "current_stage": "complete",
   "completed_stages": ["spec", "plan", "implement", "test"],
@@ -646,9 +633,7 @@ Branch: <current-branch>
 Output: .aide/output/
 ```
 
-### Merge decision
-
-If a branch was created (`aide/<slug>`): ask whether to merge back to the original branch.
+Pipeline artifacts committed to the current branch. No merge needed.
 
 ---
 
