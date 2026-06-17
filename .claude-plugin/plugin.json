@@ -1,7 +1,7 @@
 {
   "name": "aide",
   "description": "AI-Driven Development Automation \u2014 structured pipeline from requirements to implementation with human gates",
-  "version": "1.27.0",
+  "version": "1.28.0",
   "author": {
     "name": "AIDE"
   },

@@ -81,64 +81,13 @@ Batch independent operations together. When invoking a stage skill, pass the com
 
 **You MUST ground all pipeline decisions in the existing project.** Read `aide-core/pipeline-protocol.md` (Section: Project Context Analysis) and follow the procedure there exactly. Locate `aide-core/` using the same search strategy as Step 2 below.
 
-### Step 1: Branch Preparation
+### Step 1: Generate slug
 
-> **Note**: If the user wants to resume an interrupted pipeline, they should use `/aide-continue` instead of `/aide`. That skill handles branch validation and state reading, then invokes the orchestrator.
+Extract 3-5 core keywords from the user's requirement description, convert to lowercase, join with `-`. Example: `"Add user login with OAuth support"` → `user-login-oauth`.
 
-**If invoked via `aide-continue`**: The `--continue` argument will be passed. Skip branch creation — the branch already exists. Proceed directly to Step 2.
+This slug is used ONLY for naming pipeline output files (e.g., `2026-06-17-user-login-oauth-spec.md`). No branch is created — AIDE works directly on the current branch.
 
-**If this is a new pipeline:**
-
-1. **Generate a slug** from the user's requirement description:
-   - Extract 3-5 core keywords, convert to lowercase, join with `-`
-   - Example: `"Add user login with OAuth support"` → `user-login-oauth`
-
-2. **Record current branch**:
-   ```bash
-   git branch --show-current
-   ```
-   Store as `ORIG_BRANCH`. If detached HEAD, record commit hash.
-
-3. **Ask user: create a new branch?**
-
-   Use `AskUserQuestion`:
-   ```
-   Question: "Create a new aide/<slug> branch for this pipeline?"
-   Options:
-     - "<branch-name>" (list recent branches: ORIG_BRANCH + other local branches, max 5)
-     - "skip: Stay on <ORIG_BRANCH>, no branch isolation"
-   Multi-select: false
-   ```
-
-   - If user selects a branch name: that becomes the source. Construct `aide/<slug>` from it.
-   - If `skip` (default): set `AIDE_BRANCH=""`, skip steps 4-6 below. Work directly on `ORIG_BRANCH`.
-
-4. **Check for existing branches**:
-   ```bash
-   git branch --list "aide/<slug>*"
-   ```
-   If the exact name exists, append `-2`, `-3`, etc.
-
-5. **Handle uncommitted changes**:
-   ```bash
-   git status --porcelain
-   ```
-   If dirty: `git stash push -m "AIDE: auto-stash before aide/<slug>"`. Record stash.
-
-6. **Create and switch**:
-   ```bash
-   git checkout -b aide/<slug>
-   ```
-   If fails: restore stash, report, abort.
-
-7. **Report**:
-   ```
-   Created branch aide/<slug> (from <source-branch>). Pipeline artifacts will be committed here.
-   ```
-   Or if skipped:
-   ```
-   Working on <ORIG_BRANCH>. Pipeline artifacts will be committed here directly.
-   ```
+**If invoked via `aide-continue`**: Skip slug generation. Proceed directly to Step 2.
 
 ### Step 2: Read conventions
 
@@ -223,7 +172,7 @@ Each gate entry has `name`, `type`, and `prompt` as top-level keys. Unknown gate
 **If this is a new pipeline**: Start from `spec`. Initialize state.json:
 
 ```json
-{"pipeline": "<slug>", "slug": "<slug>", "current_stage": "spec", "completed_stages": [], "last_updated": "<timestamp>"}
+{"slug": "<slug>", "current_stage": "spec", "completed_stages": [], "last_updated": "<timestamp>"}
 ```
 
 Write to `.aide/state.json`.
@@ -694,28 +643,9 @@ After all enabled stages have completed, present the pipeline summary:
 Branch: <current-branch>
 ```
 
-If a branch was created (Step 1), **ask user: merge?**
+Pipeline artifacts committed to the current branch. No merge needed — you control your own branching.
 
-Use `AskUserQuestion`:
-```
-Question: "Merge aide/<slug> into a target branch?"
-Options:
-  - "<ORIG_BRANCH> (Recommended)"
-  - (list other local branches, max 5)
-  - "skip: No merge, artifacts stay on aide/<slug>"
-Multi-select: false
-```
-
-- If user selects a target: `git checkout <target> && git merge aide/<slug>`. Report: "Merged aide/<slug> into <target>."
-- If `skip` (default): no merge. Report: "Artifacts remain on <current-branch>. Merge manually when ready."
-
-If a stash was created in Step 1, append:
-
-```
-Auto-stashed changes: run `git stash list` to review.
-```
-
-If aborted early, show what was completed and note: "Resume on branch `<current-branch>` with `/aide-continue`."
+If aborted early, show what was completed and note: "Resume with `/aide-continue`."
 
 ## Important Guidelines
 
