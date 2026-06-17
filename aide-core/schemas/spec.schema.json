@@ -39,6 +39,11 @@
             "minItems": 1,
             "items": { "type": "string" },
             "description": "Verifiable acceptance criteria for this feature."
+          },
+          "confidence": {
+            "type": "string",
+            "enum": ["high", "medium", "low", "unreviewed"],
+            "description": "Confidence level for this feature after review panel assessment. 'unreviewed' when review_panel is disabled or degraded."
           }
         },
         "additionalProperties": false
@@ -52,6 +57,68 @@
     "scope_boundary": {
       "type": "string",
       "description": "What is explicitly out of scope. Prevents scope creep."
+    },
+    "review_trail": {
+      "type": "object",
+      "description": "Review panel audit trail. Present only when review_panel ran.",
+      "required": ["status", "reviewers_ran", "reviewers_failed", "total_gaps_found", "gaps_accepted", "gaps_rejected", "gaps_pending", "decisions"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["completed", "partial", "degraded", "disabled"],
+          "description": "Review completeness status."
+        },
+        "reviewers_ran": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "IDs of reviewers that completed successfully."
+        },
+        "reviewers_failed": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "IDs of reviewers that failed or timed out."
+        },
+        "total_gaps_found": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total unique gaps found across all reviewers (after dedup)."
+        },
+        "gaps_accepted": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of gaps accepted and applied to spec."
+        },
+        "gaps_rejected": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of gaps rejected with reason."
+        },
+        "gaps_pending": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of gaps deferred to user decision in gate."
+        },
+        "decisions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["gap_id", "lens", "severity", "scope", "decision", "decision_source"],
+            "properties": {
+              "gap_id": { "type": "string", "pattern": "^GAP-\\d{3}$" },
+              "lens": { "type": "string", "enum": ["edge_case", "security", "performance"] },
+              "severity": { "type": "string", "enum": ["critical", "warning", "info"] },
+              "scope": { "type": "string" },
+              "title": { "type": "string" },
+              "decision": { "type": "string", "enum": ["accepted", "rejected", "pending"] },
+              "decision_source": { "type": "string", "enum": ["auto", "writer", "user"] },
+              "reason": { "type": "string" },
+              "new_ac_index": { "type": "integer", "minimum": 0 }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false
