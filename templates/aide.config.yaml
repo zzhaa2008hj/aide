@@ -17,6 +17,19 @@ stages:
       - name: after_spec
         type: confirm
         prompt: "Review the spec at .aide/output/1-spec/spec.md. Does this look right? (y/n)"
+    review_panel:
+      enabled: true
+      reviewers:
+        - id: edge_case
+          enabled: true
+          max_gaps: 8
+        - id: security
+          enabled: true
+          max_gaps: 5
+        - id: performance
+          enabled: true
+          max_gaps: 5
+      min_reviewers: 2
 
   plan:
     enabled: true
