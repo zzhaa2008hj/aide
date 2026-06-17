@@ -169,6 +169,19 @@ stages:
       - name: after_spec
         type: confirm
         prompt: "Review the spec at .aide/output/1-spec/spec.md. Does this look right? (y/n)"
+    review_panel:
+      enabled: true
+      reviewers:
+        - id: edge_case
+          enabled: true
+          max_gaps: 8
+        - id: security
+          enabled: true
+          max_gaps: 5
+        - id: performance
+          enabled: true
+          max_gaps: 5
+      min_reviewers: 2
   plan:
     enabled: true
     gates:
@@ -280,6 +293,44 @@ If the stage skill invocation fails or produces no output:
 ## Gate Checkpoints
 
 After a stage completes successfully, run its configured gates. The gate configuration comes from the stage's `gates` list in `.aide/config.yaml` (or the defaults). See `aide-core/gate.md` for the complete gate engine specification.
+
+### Review Panel Summary (Spec Stage Only)
+
+**When `current_stage == "spec"` and `review_panel.enabled` is true** in config:
+
+1. **Read `review_trail`** from `.aide/output/1-spec/*-spec.json`.
+
+2. **Display review summary** before the normal gate prompt:
+
+```
+## Spec Review Summary
+
+Review status: <review_trail.status>  |  <N> reviewers ran, <M> failed
+Gaps found: <total>  |  Accepted: <accepted>  |  Rejected: <rejected>  |  Pending: <pending>
+
+Confidence: F001=<confidence>, F002=<confidence>, ...
+```
+
+3. **If `gaps_pending > 0`**: Present pending gaps for user decision BEFORE the normal gate. Use `AskUserQuestion` for each pending gap:
+
+```
+Question: "Spec review found a gap: <gap.title>. <gap.description> Suggested: <gap.suggested_ac> Accept?"
+Header: "Spec Gap"
+Options:
+  - "y: Accept — add to spec (Recommended)"
+  - "n: Reject — skip this suggestion"
+```
+
+After the user decides on ALL pending gaps:
+- For accepted: set `decision: "accepted"`, `decision_source: "user"`, apply suggested_ac to spec
+- For rejected: set `decision: "rejected"`, `decision_source: "user"`, ask for brief reason
+- Update `review_trail.gaps_pending`, `gaps_accepted`, `gaps_rejected` counts and `decisions` array
+- Regenerate spec.md + spec.json with applied changes
+- Re-run schema validation on the updated spec.json
+
+4. **If `gaps_pending == 0`** (or after all pending gaps resolved): proceed to normal gate flow below.
+
+5. **If `status == "degraded"`** append to gate prompt: "⚠ Spec review panel was degraded — spec was NOT reviewed by all lenses."
 
 ### Process for Each Gate
 
