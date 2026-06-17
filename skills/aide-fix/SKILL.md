@@ -27,7 +27,7 @@ cat .aide/fix-state.json 2>/dev/null || echo "NO_STATE_FILE"
   1. Read `current_stage` and `completed_stages`
   2. Jump directly to `current_stage` — do NOT re-run completed stages
   3. Announce: `"Resuming aide-fix pipeline from Stage <N> (<current_stage>). Completed: <list>"`
-  4. Skip Startup Sequence steps that have already been done (branch creation, state init, dir creation)
+  4. Skip Startup Sequence steps that have already been done (state init, dir creation)
 
 - **If state file DOES NOT EXIST**: Fresh start. Run the full Startup Sequence, then execute all stages.
 
@@ -80,49 +80,9 @@ Store as `SLUG` for use throughout the pipeline.
 
 Report findings briefly to establish context.
 
-### Step 1: Branch Preparation
+### Step 1: Confirm working directory
 
-1. **Record current branch**:
-   ```bash
-   git branch --show-current
-   ```
-   Store as `ORIG_BRANCH`. If detached HEAD, record commit hash.
-
-2. **Gate 1 — AskUserQuestion: create branch?**:
-   ```
-   Question: "Create aide-fix/<slug> branch for this fix?"
-   Options:
-     - "Create aide-fix/<slug> (Recommended)" — Isolated branch for this fix
-     - "skip: Stay on <ORIG_BRANCH>" — Work directly on current branch
-   Multi-select: false
-   ```
-
-3. **Check for existing branches**:
-   ```bash
-   git branch --list "aide-fix/<slug>*"
-   ```
-   If the exact name exists, append `-2`, `-3`, etc.
-
-4. **Handle uncommitted changes**:
-   ```bash
-   git status --porcelain
-   ```
-   If dirty: `git stash push -m "aide-fix: auto-stash before aide-fix/<slug>"`. Record stash.
-
-5. **Create and switch** (if user selected branch creation):
-   ```bash
-   git checkout -b aide-fix/<slug>
-   ```
-   If fails: restore stash, report, abort.
-
-6. **Report**:
-   ```
-   Created branch aide-fix/<slug> (from <ORIG_BRANCH>). Fix artifacts will be committed here.
-   ```
-   Or if skipped:
-   ```
-   Working on <ORIG_BRANCH>. Fix artifacts will be committed here directly.
-   ```
+AIDE works directly on the current branch. No branch is created — fix artifacts are committed to the current branch.
 
 ### Step 2: Load configuration
 
@@ -160,7 +120,6 @@ Write `.aide/fix-state.json` with the following schema:
 ```json
 {
   "slug": "<slug>",
-  "branch": "aide-fix/<slug>",
   "description": "<brief description of the bug>",
   "current_stage": "analyze",
   "completed_stages": [],
@@ -177,7 +136,6 @@ python3 -c "
 import json, datetime
 state = {
     'slug': '<slug>',
-    'branch': 'aide-fix/<slug>',
     'description': '<description>',
     'current_stage': 'analyze',
     'completed_stages': [],
@@ -201,7 +159,7 @@ mkdir -p .aide/fix/output/1-analyze .aide/fix/output/2-implement .aide/fix/outpu
 
 ```
 Starting aide-fix pipeline for: <description>
-Branch: aide-fix/<slug> (or <ORIG_BRANCH>)
+Artifacts committed to the current branch.
 Stages: analyze -> implement -> test
 ```
 
@@ -737,31 +695,16 @@ Bug fix for: <description>
 | implement | Completed  |
 | test      | Completed  |
 
-Branch: <current-branch>
 Analyze report: .aide/fix/output/1-analyze/<date>-<slug>-analyze.md
 Test report: .aide/fix/output/3-test/<date>-<slug>-test-report.md
 ```
 
-**Merge instructions** (IMPORTANT — never auto-merge):
-
-If a dedicated branch was created (`aide-fix/<slug>`):
-```
-The fix is on branch aide-fix/<slug>. Merge manually when ready:
-
-  git checkout <ORIG_BRANCH>
-  git merge aide-fix/<slug>
-```
-
-If a stash was created in Step 1, append:
-```
-Auto-stashed changes: run `git stash list` to review. To restore:
-  git stash pop
-```
+Fix artifacts committed to the current branch. No merge needed.
 
 If the pipeline was aborted early, show what was completed and note:
 ```
-Resume with `/aide-fix` on branch <current-branch>. The state file at
-.aide/fix-state.json will detect completed stages and skip them.
+Resume with `/aide-fix`. The state file at .aide/fix-state.json will
+detect completed stages and skip them.
 
   Completed stages: <list>
   Current stage: <current_stage>
@@ -775,4 +718,4 @@ Resume with `/aide-fix` on branch <current-branch>. The state file at
 - Write concise commit messages: `aide-fix(<stage>): <slug> — <summary>`.
 - Use absolute paths when executing bash commands (e.g., `mkdir -p .aide/fix/output/1-analyze/`).
 - If the user interrupts mid-pipeline, acknowledge the interruption and note that they can resume.
-- After pipeline completion, the user must merge manually — never auto-merge.
+- After pipeline completion, artifacts are committed to the current branch — no merge needed.
