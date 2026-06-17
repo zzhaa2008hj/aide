@@ -75,21 +75,11 @@ aide(<stage>): <summary>
 
 Business code changes are never auto-committed. Working-tree changes outside `.aide/` produce a warning but do not block the commit.
 
-## Branch Isolation
-
-Each new AIDE pipeline run creates a dedicated branch to isolate workflow artifacts from the user's working branch:
-
-- **Naming**: `aide/<slug>` where `<slug>` is a short kebab-case identifier derived from the feature description (e.g., `aide/user-login-oauth`)
-- **Base**: The branch is created from the current `HEAD`
-- **Auto-stash**: If the working tree has uncommitted changes, they are stashed before branch creation with message `AIDE: auto-stash before aide/<slug>`
-- **--continue**: Recovery runs reuse the existing `aide/*` branch — no new branch is created
-- **Post-pipeline**: The branch is left as-is; merging back is a manual user decision
-
 ## Fix Pipeline Stage Order
 
 | Order | Stage     | Description                         | Executor                |
 |-------|-----------|-------------------------------------|-------------------------|
-| 0     | init      | Project context + branch creation   | Orchestrator            |
+| 0     | init      | Project context + state setup       | Orchestrator            |
 | 1     | analyze   | Root cause → scope fence            | Orchestrator            |
 | 2     | implement | Scope-fenced code changes           | Orchestrator (1 agent)  |
 | 3     | test      | Verify + auto-retry (max 2)        | Orchestrator + aide-test|
@@ -117,7 +107,6 @@ Each stage produces both `.md` (for human review) and `.json` (for AI consumptio
 
 ## Fix Pipeline Git Conventions
 
-- Branch naming: `aide-fix/<slug>`
 - Auto-commit `.aide/fix/` artifacts after each stage with message: `aide-fix(<stage>): <summary>`
 - Business code changes are never auto-committed
-- After pipeline completes, the branch is left as-is; merging back is a manual user decision
+- Artifacts committed to the current branch — no merge needed

@@ -25,13 +25,13 @@ Optional: run `/aide-init` to explicitly bootstrap `.aide/` and the config templ
 ```
 
 AIDE will:
-1. Create an `aide/<slug>` branch and stash uncommitted changes
-2. Analyze the existing project context (tech stack, conventions, patterns)
-3. Generate a structured spec (`.aide/output/1-spec/`)
-4. Pause for your review (gate: confirm / confirm_skip / auto)
-5. Proceed through plan → implement → test stages
-6. Implement stage dispatches tasks to subagents with spec + quality reviews
-7. Test stage auto-retries failures up to 3 rounds
+1. Analyze the existing project context (tech stack, conventions, patterns)
+2. Generate a structured spec (`.aide/output/1-spec/`)
+3. Pause for your review (gate: confirm / confirm_skip / auto)
+4. Proceed through plan → implement → test stages
+5. Implement stage dispatches tasks to subagents with spec + quality reviews
+6. Test stage auto-retries failures up to 3 rounds
+7. Auto-commit `.aide/` artifacts after each stage to the current branch
 
 ### Resume an interrupted pipeline
 
@@ -39,7 +39,7 @@ AIDE will:
 /aide-continue
 ```
 
-Validates branch, reads `.aide/state.json` to find where you left off, skips completed stages, and resumes execution.
+Reads `.aide/state.json` to find where you left off, skips completed stages, and resumes execution on the current branch.
 
 ### Updating AIDE
 
@@ -197,8 +197,7 @@ The pre-commit hook automatically bumps `plugin.json` + `marketplace.json` when 
 | Test stage (`aide-test` skill, auto-retry 3 rounds) | Done |
 | Gate engine (confirm / confirm_skip / auto) | Done |
 | Project context analysis (Stage 0.2, mandatory) | Done |
-| Branch isolation (per-pipeline `aide/<slug>` branch) | Done |
-| Auto-stash on dirty working tree | Done |
+| Git branch control removed (user-managed branching) | Done |
 | Pipeline resume (`/aide-continue` with state.json) | Done |
 | Pipeline discipline guards (state machine enforcement) | Done |
 | Shared pipeline protocol (deduplicated orchestrators) | Done |
