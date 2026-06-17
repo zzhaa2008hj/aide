@@ -62,7 +62,7 @@ Edit `.aide/config.yaml` to change gate types per stage:
 | Order | Stage     | Skill          | Description                            |
 |-------|-----------|----------------|----------------------------------------|
 | 0.2   | context   | Orchestrator   | Project analysis: tech stack, patterns |
-| 1     | spec      | `aide-spec`    | Requirements → Specification           |
+| 1     | spec      | `aide-spec`    | Requirements → Specification (+ adversarial review) |
 | 2     | plan      | `aide-plan`    | Specification → Task plan              |
 | 3     | implement | Orchestrator   | Tasks → Code (subagent per task)       |
 | 4     | test      | `aide-test`    | Test suite + spec verification + retry |
@@ -100,7 +100,7 @@ AIDE/
 │   ├── aide-codewhale/                 # Pipeline orchestrator (CodeWhale)
 │   │   └── install.sh                 # One-line install for CodeWhale
 │   ├── aide-fix/                      # Bug-fix pipeline (analyze → implement → test)
-│   ├── aide-spec/                     # Stage 1: Requirements → Spec
+│   ├── aide-spec/                     # Stage 1: Requirements → Spec (+ Reviewer Panel)
 │   ├── aide-plan/                     # Stage 2: Spec → Plan
 │   ├── aide-test/                     # Stage 4: Verification → Test report
 │   ├── aide-continue/                 # Pipeline resume
@@ -208,6 +208,7 @@ The pre-commit hook automatically bumps `plugin.json` + `marketplace.json` when 
 | Code Analysis in implement stage (all orchestrators) | Done |
 | Code Verification in test stage (all orchestrators) | Done |
 | CodeWhale orchestrator (`aide-codewhale`) | Done |
+| Spec Reviewer Panel (3-lens adversarial review) | Done |
 
 ### Planned / TODO
 
