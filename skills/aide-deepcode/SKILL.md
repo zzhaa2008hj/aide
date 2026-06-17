@@ -99,6 +99,19 @@ stages:
       - name: after_spec
         type: confirm_skip
         prompt: "Review the spec at .aide/output/1-spec/. Does this look right? (y/n/skip)"
+    review_panel:
+      enabled: true
+      reviewers:
+        - id: edge_case
+          enabled: true
+          max_gaps: 8
+        - id: security
+          enabled: true
+          max_gaps: 5
+        - id: performance
+          enabled: true
+          max_gaps: 5
+      min_reviewers: 2
   plan:
     enabled: true
     gates:
@@ -165,6 +178,20 @@ ls -la .aide/output/1-spec/*-spec.md .aide/output/1-spec/*-spec.json
 If either file is missing, go back and complete the spec stage.
 
 ### Gate
+
+**If `review_panel.enabled` is true in config**: Read `review_trail` from `.aide/output/1-spec/*-spec.json`. Display review summary:
+
+```
+## Spec Review Summary
+
+Review status: <status>  |  <N> reviewers ran, <M> failed
+Gaps found: <total>  |  Accepted: <accepted>  |  Rejected: <rejected>  |  Pending: <pending>
+Confidence: F001=<confidence>, ...
+```
+
+If `gaps_pending > 0`: Present pending gaps using `AskUserQuestion`. After all decided, update review_trail, regenerate spec, re-validate.
+
+If `status == "degraded"`: append "⚠ Spec review panel was degraded." to gate prompt.
 
 Read the gate config for `after_spec` from the loaded configuration. Process according to gate type:
 
