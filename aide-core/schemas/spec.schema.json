@@ -109,10 +109,12 @@
               "severity": { "type": "string", "enum": ["critical", "warning", "info"] },
               "scope": { "type": "string" },
               "title": { "type": "string" },
+              "description": { "type": "string" },
+              "suggested_ac": { "type": "string" },
               "decision": { "type": "string", "enum": ["accepted", "rejected", "pending"] },
               "decision_source": { "type": "string", "enum": ["auto", "writer", "user"] },
-              "reason": { "type": "string" },
-              "new_ac_index": { "type": "integer", "minimum": 0 }
+              "reason": { "type": ["string", "null"] },
+              "new_ac_index": { "type": "integer", "minimum": 1 }
             },
             "additionalProperties": false
           }

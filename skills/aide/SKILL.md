@@ -263,7 +263,7 @@ Confidence: F001=<confidence>, F002=<confidence>, ...
 3. **If `gaps_pending > 0`**: Present pending gaps for user decision BEFORE the normal gate. Use `AskUserQuestion` for each pending gap:
 
 ```
-Question: "Spec review found a gap: <gap.title>. <gap.description> Suggested: <gap.suggested_ac> Accept?"
+Question: "Spec review found a gap: <gap.title> [<gap.lens>/<gap.severity>]. Accept the suggested fix?"
 Header: "Spec Gap"
 Options:
   - "y: Accept — add to spec (Recommended)"

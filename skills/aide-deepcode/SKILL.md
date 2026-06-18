@@ -78,8 +78,8 @@ stages:
     enabled: true
     gates:
       - name: after_spec
-        type: confirm_skip
-        prompt: "Review the spec at .aide/output/1-spec/. Does this look right? (y/n/skip)"
+        type: confirm
+        prompt: "Review the spec at .aide/output/1-spec/. Does this look right? (y/n)"
     review_panel:
       enabled: true
       reviewers:
@@ -170,7 +170,11 @@ Gaps found: <total>  |  Accepted: <accepted>  |  Rejected: <rejected>  |  Pendin
 Confidence: F001=<confidence>, ...
 ```
 
-If `gaps_pending > 0`: Present pending gaps using `AskUserQuestion`. After all decided, update review_trail, regenerate spec, re-validate.
+If `gaps_pending > 0`: Present pending gaps using `AskUserQuestion`. For each:
+- y → set `decision: "accepted"`, `decision_source: "user"`, apply `suggested_ac` to spec
+- n → set `decision: "rejected"`, `decision_source: "user"`, ask for brief reason
+
+After all decided, update `review_trail` (counts + decisions array), regenerate spec.md + spec.json with applied changes, re-validate.
 
 If `status == "degraded"`: append "⚠ Spec review panel was degraded." to gate prompt.
 

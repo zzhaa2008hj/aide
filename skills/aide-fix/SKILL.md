@@ -84,6 +84,14 @@ Report findings briefly to establish context.
 
 AIDE works directly on the current branch. No branch is created — fix artifacts are committed to the current branch.
 
+**⚠ Before modifying any source files**, check for uncommitted changes:
+```bash
+git status --porcelain
+```
+If there are uncommitted changes outside `.aide/`:
+- Warn the user: "⚠ Uncommitted changes detected. The fix pipeline will modify source files directly on top of your working changes. Consider committing or stashing your work first."
+- Do NOT auto-stash — the user controls their own git state.
+
 ### Step 2: Load configuration
 
 Read configuration from `.aide/config.yaml`. If the file does not exist or cannot be read, use the following hardcoded defaults:

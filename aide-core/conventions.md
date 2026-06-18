@@ -84,7 +84,7 @@ Business code changes are never auto-committed. Working-tree changes outside `.a
 | 2     | implement | Scope-fenced code changes           | Orchestrator (1 agent)  |
 | 3     | test      | Verify + auto-retry (max 2)        | Orchestrator + aide-test|
 
-The fix pipeline is a lightweight alternative to the full pipeline, designed for bug fixes and small optimizations. It is invoked via `/aide-fix` and uses independent state tracking (`.aide/fix-state.json`), branch prefix (`aide-fix/`), and output directory (`.aide/fix/output/`).
+The fix pipeline is a lightweight alternative to the full pipeline, designed for bug fixes and small optimizations. It is invoked via `/aide-fix` and uses independent state tracking (`.aide/fix-state.json`) and output directory (`.aide/fix/output/`).
 
 ## Fix Pipeline Output Structure
 

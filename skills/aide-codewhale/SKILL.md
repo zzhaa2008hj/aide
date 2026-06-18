@@ -141,10 +141,10 @@ stages:
     enabled: true
     gates:
       - name: after_spec
-        type: confirm_skip
-        prompt: "Review the spec at .aide/output/1-spec/. Does this look right? (y/n/skip)"
+        type: confirm
+        prompt: "Review the spec at .aide/output/1-spec/. Does this look right? (y/n)"
     review_panel:
-      enabled: true
+      enabled: false
       reviewers:
         - id: edge_case
           enabled: true
@@ -257,7 +257,7 @@ ls -la .aide/output/1-spec/*-spec.md .aide/output/1-spec/*-spec.json
 
 ### Gate
 
-**If `review_panel.enabled` is true in config**: Read `review_trail` from `.aide/output/1-spec/*-spec.json`. Display review summary:
+**If `review_panel.enabled` is true in config and `review_trail` exists in spec.json**: Read `review_trail` from `.aide/output/1-spec/*-spec.json`. Display review summary:
 
 ```
 ## Spec Review Summary
@@ -267,7 +267,11 @@ Gaps found: <total>  |  Accepted: <accepted>  |  Rejected: <rejected>  |  Pendin
 Confidence: F001=<confidence>, ...
 ```
 
-If `gaps_pending > 0`: Present pending gaps interactively (use CodeWhale's native interaction mechanism). After all decided, update review_trail, regenerate spec, re-validate.
+If `gaps_pending > 0`: Present pending gaps interactively. For each:
+- Accepted → set `decision: "accepted"`, `decision_source: "user"`, apply `suggested_ac` to spec
+- Rejected → set `decision: "rejected"`, `decision_source: "user"`, ask for brief reason
+
+After all decided, update `review_trail` (counts + decisions array), regenerate spec.md + spec.json, re-validate.
 
 If `status == "degraded"`: append "⚠ Spec review panel was degraded." to gate prompt.
 
