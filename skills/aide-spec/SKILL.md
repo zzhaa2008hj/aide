@@ -170,7 +170,7 @@ This step is inspired by deep-research's adversarial verification methodology.
 #### 3.5.1 Read configuration
 
 Read `.aide/config.yaml` and check `stages.spec.review_panel.enabled`:
-- If `false` or missing: skip Step 3.5 entirely. Set `review_trail.status = "disabled"` in spec.json. Proceed to Validation.
+- If `false` or missing: skip Step 3.5 entirely. Do NOT add a `review_trail` to spec.json (the schema marks it optional — "Present only when review_panel ran"). Set all features' `confidence = "unreviewed"`. Proceed to Validation.
 - If `true`: continue to 3.5.2.
 
 #### 3.5.2 Prepare reviewer inputs
@@ -192,7 +192,7 @@ Each reviewer outputs:
   "lens": "<lens_id>",
   "gaps": [
     {
-      "id": "GAP-001",
+      "gap_id": "GAP-001",
       "severity": "critical|warning|info",
       "scope": "F001 或 global 或 missing_feature",
       "category": "<lens-specific category>",
@@ -224,9 +224,20 @@ Use the Agent tool to dispatch 3 context-isolated agents simultaneously. Each ag
 #### 3.5.4 Check min_reviewers
 
 Count successful reviewers (those that returned valid output). If count < `min_reviewers` (from config, default 2):
-- Set `review_trail.status = "degraded"`
 - Set all features' `confidence = "unreviewed"`
-- Write review_trail with `reviewers_ran` and `reviewers_failed`
+- Write a complete review_trail with zero counts (schema-compliant):
+  ```json
+  {
+    "status": "degraded",
+    "reviewers_ran": ["<successful reviewer ids>"],
+    "reviewers_failed": ["<failed reviewer ids>"],
+    "total_gaps_found": 0,
+    "gaps_accepted": 0,
+    "gaps_rejected": 0,
+    "gaps_pending": 0,
+    "decisions": []
+  }
+  ```
 - Report: "Review panel degraded: only N/M reviewers succeeded. Skipping review. Spec confidence: unreviewed."
 - Proceed to Validation (skip 3.5.5–3.5.9).
 
@@ -243,20 +254,23 @@ Set `review_trail.status = "completed"` if all 3 reviewers succeeded, `"partial"
 For each gap in the merged list (sorted by severity):
 
 **If gap.severity == "info"**:
-- Auto-accept. Append `suggested_ac` to the target feature's `acceptance_criteria` array (if `scope` is a feature_id). For `scope: global`, add to `constraints`. For `scope: missing_feature`, note as a potential new feature but do NOT auto-create it — flag for gate.
-- Record: `decision: "accepted"`, `decision_source: "auto"`, `new_ac_index: <index>`.
+- Auto-accept. Append `suggested_ac` to the target feature's `acceptance_criteria` array (if `scope` is a feature_id). For `scope: global`, add to `constraints`. For `scope: missing_feature`, escalate to gate as a pending gap for user decision (marked pending with `decision_source: "writer"` — a missing feature needs user approval to add).
+- Record the full decision entry: all 6 required fields (`gap_id`, `lens`, `severity`, `scope`, `decision`, `decision_source`) plus `title` and `new_ac_index` (if applicable). For auto-accepted gaps: `decision: "accepted"`, `decision_source: "auto"`.
 
 **If gap.severity == "warning"**:
 - Evaluate the gap. Decide: accept or pending.
-- If accepted: same as above, but `decision_source: "writer"`.
-- If pending: `decision: "pending"`, `decision_source: "writer"`. Do NOT modify spec yet.
-- Warning gaps should NOT be rejected unless factually wrong — the reviewer is flagging real risks.
+- If accepted: same as above (apply suggested_ac, record full decision entry), but `decision_source: "writer"`.
+- If pending: `decision: "pending"`, `decision_source: "writer"`. Do NOT modify spec yet. Record full decision entry (without `new_ac_index`).
+- If rejected (only when factually wrong): record `reason`, `decision: "rejected"`, `decision_source: "writer"`. Warning gaps should rarely be rejected — the reviewer is flagging real risks.
 
 **If gap.severity == "critical"**:
 - Evaluate the gap. Decide: accept, reject, or pending.
 - If accepted: apply to spec, `decision_source: "writer"`.
 - If rejected: record `reason`, `decision_source: "writer"`.
 - If pending: `decision: "pending"`, `decision_source: "writer"`.
+- Record the full decision entry (all 6 required fields + `title`, `reason`/`new_ac_index` as applicable).
+
+**Every decision entry MUST include**: `gap_id`, `lens`, `severity`, `scope`, `title`, `decision`, `decision_source`. Optional: `reason` (when rejected), `new_ac_index` (when accepted), `description` (carried forward from reviewer output for gate display), `suggested_ac` (carried forward from reviewer output for gate display).
 
 **Constraint**: After processing all gaps, every gap must have one of {accepted, rejected, pending}. No gap may be left undecided.
 
@@ -265,6 +279,7 @@ For each gap in the merged list (sorted by severity):
 For all accepted gaps:
 - If `scope` is a feature_id (e.g., "F001"): append `suggested_ac` to that feature's `acceptance_criteria` array in spec.json
 - If `scope` is "global": append `suggested_ac` to `constraints` array in spec.json
+- If `scope` is "missing_feature": escalate to gate as a pending gap (do NOT create feature here — a new feature requires user approval). Mark `decision: "pending"`, `decision_source: "writer"`. The gate will present it for user decision. If the user accepts at the gate, create a new feature entry with the next available F-number, using `suggested_ac` as its first acceptance criterion.
 
 Update `spec.md` to reflect the same additions (append new AC bullets to corresponding feature sections, add new constraints).
 
@@ -274,12 +289,13 @@ For each feature in spec.json, assign confidence according to:
 
 | Condition | confidence |
 |-----------|-----------|
-| review_trail.status ∈ {degraded, disabled} | `unreviewed` |
-| No gap from any successful reviewer references this feature | `unreviewed` |
+| review_trail.status ∈ {degraded} | `unreviewed` |
 | Feature has ≥1 critical gap (accepted or pending) | `low` |
 | Feature has warning gap(s), any pending | `low` |
 | Feature has warning gap(s), all accepted | `medium` |
-| Feature has only info gaps or zero gaps | `high` |
+| Feature has only info gaps | `high` |
+| Feature has zero gaps from all successful reviewers | `high` |
+| Feature not examined by any reviewer (added after review or review disabled) | `unreviewed` |
 
 Write the `confidence` value into each feature object in spec.json.
 
